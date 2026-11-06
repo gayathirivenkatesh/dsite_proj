@@ -9,4 +9,3 @@ export function validateRequest(schema, target = 'body') {
     }
   };
 }
-

@@ -2,7 +2,7 @@
 ## Phase status (TODO / IN PROGRESS / DONE)
 P1 Foundation: DONE
 P2 Auth and RBAC: DONE
-P3 Files and storage: TODO
+P3 Files and storage: DONE
 P4 Share links, expiry, password: TODO
 P5 Access logs: TODO
 P6 Admin, hardening, API docs: TODO
@@ -11,7 +11,7 @@ P8 Frontend pages: TODO
 P9 Docker, CI, deployment: TODO
 P10 Final audit and docs: TODO
 ## Stack and commands (fill as decided)
-- Backend: Node.js (ES modules), Express, MongoDB + Mongoose, Zod 4, argon2, jsonwebtoken, helmet, cors, hpp, express-rate-limit, cookie-parser
+- Backend: Node.js (ES modules), Express, MongoDB + Mongoose, Zod 4, argon2, jsonwebtoken, multer, file-type, helmet, cors, hpp, express-rate-limit, cookie-parser
 - Frontend: React 19, Vite 6, React Router 7, CSS variables with custom typography
 - Testing & Tooling: Vitest 5, Supertest, mongodb-memory-server, ESLint 9, Prettier 3
 - Commands:
@@ -36,8 +36,13 @@ P10 Final audit and docs: TODO
 - Strict Zod whitelisting prevents mass assignment of sensitive fields such as `role`.
 - Reusable `authenticate` (Bearer JWT) and `authorize(...roles)` middlewares guard protected resources with standard 401 and 403 error formats.
 - `mongodb-memory-server` configured for isolated, reproducible automated integration tests without external database dependencies.
+- Storage abstraction created via `BaseStorage` and `LocalStorageDriver`, safely resolving disk paths outside public web roots and blocking directory traversal.
+- Dual-layer file validation: extension allowlist checked and verified against binary magic bytes using `file-type` and null-byte scanners.
+- User filenames are sanitized (stripping directory traversal, null bytes, control characters, leading/trailing dots) and preserved solely as metadata; disk storage filenames use random 24-byte hex strings.
+- Strict owner-scoping on all file operations (`{ _id: fileId, owner: req.user.id }`), returning 404 on IDOR attempts to prevent leaking file existence.
+- File downloads streamed with `Content-Disposition: attachment` (RFC 5987 encoded) and `X-Content-Type-Options: nosniff` preventing browser MIME execution.
 ## Known issues / tech debt
 - None. `npm audit` reports 0 vulnerabilities.
 ## NEXT STEP (exact, specific)
-P3 Files and storage: Implement File model with owner scoping, storage abstraction (local disk implementation in server/src/storage/), upload endpoint with size limit and type allowlist checking extension AND magic bytes, streamed download with Content-Disposition attachment + nosniff, file delete and list endpoints, and owner-scoped queries (IDOR prevention) with automated tests.
-## Last updated: 06 Nov 2026, P2 Auth and RBAC
+P4 Share links, expiry, password: Implement ShareLink model with tokenHash (SHA-256), create/list/revoke link endpoints, expiry by time and atomic conditional $inc max download count (Key Challenge A: concurrency test required), optional argon2 link password with POST verification (Key Challenge B: rate-limiting & temporary lockout), public download page API endpoints (metadata, unlock, download), and integration tests.
+## Last updated: 06 Nov 2026, P3 Files and storage
