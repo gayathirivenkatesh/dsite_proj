@@ -33,3 +33,4 @@ export const singleFileUpload = (fieldName = 'file') => {
     });
   };
 };
+
