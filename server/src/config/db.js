@@ -40,4 +40,3 @@ export async function disconnectDB() {
     logger.info('MongoDB connection closed gracefully');
   }
 }
-

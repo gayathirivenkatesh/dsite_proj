@@ -35,4 +35,3 @@ export function sanitizeInput(req, res, next) {
   }
   next();
 }
-
