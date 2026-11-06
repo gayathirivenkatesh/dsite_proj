@@ -4,12 +4,14 @@ import authRoutes from './auth.routes.js';
 import userRoutes from './user.routes.js';
 import fileRoutes from './file.routes.js';
 import adminRoutes from './admin.routes.js';
+import linkRoutes from './link.routes.js';
 
 const apiRouter = Router();
 
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/files', fileRoutes);
+apiRouter.use('/links', linkRoutes);
 apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/', healthRoutes);
 
