@@ -3,7 +3,7 @@
 P1 Foundation: DONE
 P2 Auth and RBAC: DONE
 P3 Files and storage: DONE
-P4 Share links, expiry, password: TODO
+P4 Share links, expiry, password: DONE
 P5 Access logs: TODO
 P6 Admin, hardening, API docs: TODO
 P7 Frontend foundation and design system: TODO
@@ -21,7 +21,13 @@ P10 Final audit and docs: TODO
   - `npm run format:check`: verify Prettier formatting
   - `npm run test`: run server tests with Vitest
   - `npm run build --workspace=client`: build frontend bundle
-## Decisions
+- Share link tokens: crypto.randomBytes(40) URL-safe, only SHA-256 hash stored in DB; raw token returned once at creation.
+- Atomic `findOneAndUpdate` with `$and` and dual `$or` conditions (time expiry + count limit) used for download enforcement. A bare JS object cannot hold two `$or` keys — the second silently overwrites the first; the fix is `$and: [ {$or: [...]}, {$or: [...]} ]`.
+- IP-based lockout for password unlock: 5 failed attempts within a 1-hour rolling window → 15-minute lockout stored in the link document's `failedAttempts` embedded array.
+- `getPublicMetadata` hides file info (name, size, mimeType) entirely when link is password-protected.
+- `tokenHash`, `passwordHash`, and `failedAttempts` stripped from all toJSON serializations.
+- Public download endpoint uses POST (not GET) so password can be supplied in the request body — never in URL/query string.
+- Concurrency test fires 10 parallel requests at a `maxDownloads: 1` link and asserts exactly 1 returns 200 and 9 return 410.
 - Kept root directory at `d:\dsite_proj` with npm workspaces `server` and `client`.
 - Express app factory (`createApp`) in `server/src/app.js` is isolated from the network listener in `server/src/server.js` for fast, decoupled Supertest integration testing.
 - Zod schema validates all environment variables at startup and terminates immediately with formatted errors if invalid.

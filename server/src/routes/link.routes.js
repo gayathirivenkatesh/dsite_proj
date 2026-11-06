@@ -17,3 +17,4 @@ router.post('/public/:token/unlock', validateRequest(unlockLinkSchema), linkCont
 router.post('/public/:token/download', linkController.download);
 
 export default router;
+
