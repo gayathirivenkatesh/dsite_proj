@@ -9,7 +9,7 @@ P6 Admin, hardening, API docs: DONE
 P7 Frontend foundation and design system: DONE
 P8 Frontend pages: DONE
 P9 Docker, CI, deployment: DONE
-P10 Final audit and docs: TODO
+P10 Final audit and docs: DONE
 ## Stack and commands (fill as decided)
 - Backend: Node.js (ES modules), Express, MongoDB + Mongoose, Zod 4, argon2, jsonwebtoken, multer, file-type, helmet, cors, hpp, express-rate-limit, cookie-parser
 - Frontend: React 19, Vite 6, React Router 7, CSS variables with custom typography
@@ -19,9 +19,11 @@ P10 Final audit and docs: TODO
   - `npm run client:dev`: start frontend development server
   - `npm run seed`: seed default Admin and User accounts
   - `npm run lint`: run ESLint across all workspaces
+  - `npm run format`: format codebase with Prettier
   - `npm run format:check`: verify Prettier formatting
   - `npm run test`: run server tests with Vitest
   - `npm run build --workspace=client`: build frontend bundle
+  - `docker compose up --build`: run MongoDB, API, and Web in containers
 ## Decisions
 - Kept root directory at `d:\dsite_proj` with npm workspaces `server` and `client`.
 - Express app factory (`createApp`) in `server/src/app.js` is isolated from the network listener in `server/src/server.js` for fast, decoupled Supertest integration testing.
@@ -60,10 +62,11 @@ P10 Final audit and docs: TODO
 - Global administrative file deletion removes the stored binary, cleans up all associated share links, and deletes the file record.
 - Global administrative share link revocation instantly invalidates public access (returns 410 on subsequent download attempts).
 - Database seed script (`server/src/scripts/seed.js`) provides idempotent creation of default Admin (`admin@vault.local`) and standard User (`user@vault.local`).
-- Comprehensive documentation created in `docs/API.md` and `SECURITY.md`.
-- Audited against `docs/BRIEF.md` security requirements; `npm audit` verified with 0 vulnerabilities.
+- Multi-stage non-root Dockerfiles configured for server (API) and client (NGINX web) with `docker-compose.yml` for unified local execution.
+- Comprehensive documentation created in `README.md`, `docs/API.md`, `SECURITY.md`, and `docs/CHECKLIST.md`.
+- Full audit completed: all 95 tests passing, ESLint 0 errors, Prettier verified, 0 npm audit vulnerabilities, no committed secrets.
 ## Known issues / tech debt
-- None. `npm audit` reports 0 vulnerabilities.
+- None. `npm audit` reports 0 vulnerabilities. All test suites passing.
 ## NEXT STEP (exact, specific)
-P7 Frontend foundation and design system: Set up design system components (Button, Input, Card, Badge, Modal confirm dialog, Toast), API client with automatic JWT refresh interceptor, route guards (protected and role routes), and theme variables in client/.
-## Last updated: 07 Nov 2026, P6 Admin, hardening, API docs
+- All 10 phases completed and verified. System is ready for production evaluation, container deployment, or GitHub submission.
+## Last updated: 07 Nov 2026, P10 Final audit and docs
