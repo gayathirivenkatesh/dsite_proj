@@ -4,7 +4,7 @@ P1 Foundation: DONE
 P2 Auth and RBAC: DONE
 P3 Files and storage: DONE
 P4 Share links, expiry, password: DONE
-P5 Access logs: TODO
+P5 Access logs: DONE
 P6 Admin, hardening, API docs: TODO
 P7 Frontend foundation and design system: TODO
 P8 Frontend pages: TODO
@@ -48,8 +48,14 @@ P10 Final audit and docs: TODO
 - `tokenHash`, `passwordHash`, and `failedAttempts` stripped from all toJSON serializations.
 - Public download endpoint supports GET for unprotected files and POST with `{ password }` in the request body for protected links — passwords are never accepted in URL/query strings.
 - Concurrency test fires 10 parallel requests at a `maxDownloads: 1` link and asserts exactly 1 returns 200 and 9 return 410.
+- AccessLog model schema ({ outcome, ip, userAgent, linkId, fileId, owner, timestamp }) with compound indexes for owner and resource lookups.
+- Logging resilience: `accessLogService.record` wraps DB operations in try/catch to guarantee logging never breaks the request flow.
+- Secrets strictly excluded from AccessLog schema and logging calls (no passwords, tokens, or token hashes stored).
+- Outbound outcomes: `success`, `wrong_password`, `expired`, `exhausted`, `revoked`, `not_found`, and `rate_limited`.
+- Owner endpoints for logs per file (`GET /api/v1/files/:id/logs`) and per link (`GET /api/v1/links/:id/logs`) enforce owner-scoping (404 on IDOR attempts) with pagination and outcome filtering.
+- Admin endpoint (`GET /api/v1/admin/logs`) provides full system audit visibility for users with ADMIN role.
 ## Known issues / tech debt
 - None. `npm audit` reports 0 vulnerabilities.
 ## NEXT STEP (exact, specific)
-P5 Access logs: Implement AccessLog model ({ outcome, timestamp, ip, userAgent, linkId, fileId, reason }), log every download success and failure without logging passwords or tokens, ensure logging failures never break requests, owner endpoints for logs per file/link (paginated), admin endpoint for all logs (paginated), and comprehensive integration tests.
-## Last updated: 07 Nov 2026, P4 Share links, expiry, password
+P6 Admin, hardening, API docs: Implement admin user management (list, update status/role, delete) and file management endpoints, server hardening (security headers, trust proxy, rate-limiting polish), OpenAPI specification and docs/API.md, SECURITY.md, and audit tests.
+## Last updated: 07 Nov 2026, P5 Access logs

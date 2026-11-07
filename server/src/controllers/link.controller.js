@@ -46,7 +46,11 @@ export const linkController = {
 
   async getPublicMetadata(req, res, next) {
     try {
-      const meta = await linkService.getPublicMetadata({ rawToken: req.params.token });
+      const meta = await linkService.getPublicMetadata({
+        rawToken: req.params.token,
+        ip: req.ip,
+        userAgent: req.get('user-agent') || null,
+      });
       return res.json(meta);
     } catch (err) {
       return next(err);
@@ -57,10 +61,12 @@ export const linkController = {
     try {
       const { password } = req.body;
       const ip = req.ip;
+      const userAgent = req.get('user-agent') || null;
       const result = await linkService.unlockLink({
         rawToken: req.params.token,
         password,
         ip,
+        userAgent,
       });
       return res.json(result);
     } catch (err) {
@@ -71,12 +77,14 @@ export const linkController = {
   async download(req, res, next) {
     try {
       const ip = req.ip;
+      const userAgent = req.get('user-agent') || null;
       // Password may be supplied in body for password-protected links
       const password = req.body?.password ?? null;
       const { file, stream } = await linkService.downloadViaLink({
         rawToken: req.params.token,
         password,
         ip,
+        userAgent,
       });
 
       const encoded = encodeURIComponent(file.originalName);

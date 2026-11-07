@@ -2,6 +2,7 @@ import { ShareLink } from '../models/shareLink.model.js';
 import { File } from '../models/file.model.js';
 import { storage } from '../storage/index.js';
 import { hashToken, generateRandomToken, hashPassword, verifyPassword } from '../utils/crypto.js';
+import { accessLogService } from './accessLog.service.js';
 import {
   NotFoundError,
   GoneError,
@@ -30,19 +31,53 @@ async function findLinkByToken(rawToken) {
  * - Not time-expired
  * - Not download-count-exhausted
  * Throws GoneError with appropriate code if inaccessible, NotFoundError if not found.
+ * Records failed access log automatically if client info (ip) is provided.
  */
-function assertLinkAccessible(link) {
+async function assertLinkAccessible(link, { ip, userAgent } = {}) {
   if (!link) {
+    if (ip) {
+      await accessLogService.record({ outcome: 'not_found', ip, userAgent });
+    }
     throw new NotFoundError('Share link not found', [], 'LINK_NOT_FOUND');
   }
   if (link.isRevoked) {
+    if (ip) {
+      await accessLogService.record({
+        outcome: 'revoked',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
+    }
     throw new GoneError('This link has been revoked', [], 'LINK_REVOKED');
   }
   const now = new Date();
   if (link.expiresAt && link.expiresAt <= now) {
+    if (ip) {
+      await accessLogService.record({
+        outcome: 'expired',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
+    }
     throw new GoneError('This link has expired', [], 'LINK_EXPIRED');
   }
   if (link.maxDownloads !== null && link.downloadCount >= link.maxDownloads) {
+    if (ip) {
+      await accessLogService.record({
+        outcome: 'exhausted',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
+    }
     throw new GoneError('This link has been used up', [], 'LINK_EXHAUSTED');
   }
 }
@@ -178,9 +213,9 @@ export const linkService = {
   /**
    * Public metadata: returns link info but hides file details when password-protected.
    */
-  async getPublicMetadata({ rawToken }) {
+  async getPublicMetadata({ rawToken, ip, userAgent }) {
     const link = await findLinkByToken(rawToken);
-    assertLinkAccessible(link);
+    await assertLinkAccessible(link, { ip, userAgent });
 
     const isPasswordProtected = Boolean(link.passwordHash);
 
@@ -214,9 +249,9 @@ export const linkService = {
    * Unlock password-protected link. Returns file metadata on success.
    * Rate-limits and locks out per link+IP on repeated failures.
    */
-  async unlockLink({ rawToken, password, ip }) {
+  async unlockLink({ rawToken, password, ip, userAgent }) {
     const link = await findLinkByToken(rawToken);
-    assertLinkAccessible(link);
+    await assertLinkAccessible(link, { ip, userAgent });
 
     if (!link.passwordHash) {
       throw new ForbiddenError('This link is not password-protected', [], 'NO_PASSWORD');
@@ -227,6 +262,14 @@ export const linkService = {
     const existing = link.failedAttempts.find((a) => a.ip === ip);
     if (existing?.lockedUntil && existing.lockedUntil > now) {
       const remainingSecs = Math.ceil((existing.lockedUntil - now) / 1000);
+      await accessLogService.record({
+        outcome: 'wrong_password',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
       throw new TooManyRequestsError(
         `Too many failed attempts. Try again in ${remainingSecs} seconds.`,
         [],
@@ -238,11 +281,28 @@ export const linkService = {
 
     if (!isCorrect) {
       await checkAndRecordFailedAttempt(link, ip);
+      await accessLogService.record({
+        outcome: 'wrong_password',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
       throw new UnauthorizedError('Incorrect password', [], 'WRONG_PASSWORD');
     }
 
     // Clear failed attempts on success
     await clearFailedAttempts(link, ip);
+
+    await accessLogService.record({
+      outcome: 'success',
+      ip,
+      userAgent,
+      linkId: link._id,
+      fileId: link.file,
+      ownerId: link.owner,
+    });
 
     const file = await File.findById(link.file);
     return {
@@ -261,13 +321,13 @@ export const linkService = {
    * allowed download under concurrent load is served exactly once.
    * Never performs a read-check-write pattern.
    */
-  async downloadViaLink({ rawToken, password, ip }) {
+  async downloadViaLink({ rawToken, password, ip, userAgent }) {
     const tokenHash = hashToken(rawToken);
     const now = new Date();
 
     // Step 1: First confirm link exists and is not revoked/expired without touching the counter.
     const link = await ShareLink.findOne({ tokenHash });
-    assertLinkAccessible(link);
+    await assertLinkAccessible(link, { ip, userAgent });
 
     // Step 2: Check password if required (before consuming the download slot)
     if (link.passwordHash) {
@@ -275,6 +335,14 @@ export const linkService = {
       const existing = link.failedAttempts.find((a) => a.ip === ip);
       if (existing?.lockedUntil && existing.lockedUntil > now) {
         const remainingSecs = Math.ceil((existing.lockedUntil - now) / 1000);
+        await accessLogService.record({
+          outcome: 'wrong_password',
+          ip,
+          userAgent,
+          linkId: link._id,
+          fileId: link.file,
+          ownerId: link.owner,
+        });
         throw new TooManyRequestsError(
           `Too many failed attempts. Try again in ${remainingSecs} seconds.`,
           [],
@@ -283,6 +351,14 @@ export const linkService = {
       }
 
       if (!password) {
+        await accessLogService.record({
+          outcome: 'wrong_password',
+          ip,
+          userAgent,
+          linkId: link._id,
+          fileId: link.file,
+          ownerId: link.owner,
+        });
         throw new UnauthorizedError(
           'This link requires a password. Use the unlock endpoint first.',
           [],
@@ -293,6 +369,14 @@ export const linkService = {
       const isCorrect = await verifyPassword(link.passwordHash, password);
       if (!isCorrect) {
         await checkAndRecordFailedAttempt(link, ip);
+        await accessLogService.record({
+          outcome: 'wrong_password',
+          ip,
+          userAgent,
+          linkId: link._id,
+          fileId: link.file,
+          ownerId: link.owner,
+        });
         throw new UnauthorizedError('Incorrect password', [], 'WRONG_PASSWORD');
       }
 
@@ -319,18 +403,43 @@ export const linkService = {
 
     if (!updated) {
       // The link became invalid between the first check and atomic update (race condition lost)
+      await accessLogService.record({
+        outcome: 'exhausted',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
       throw new GoneError('This link has been used up or is no longer valid', [], 'LINK_EXHAUSTED');
     }
 
     // Step 4: Stream the file
     const file = await File.findById(updated.file);
     if (!file) {
+      await accessLogService.record({
+        outcome: 'not_found',
+        ip,
+        userAgent,
+        linkId: link._id,
+        fileId: link.file,
+        ownerId: link.owner,
+      });
       throw new NotFoundError(
         'The file associated with this link no longer exists',
         [],
         'NOT_FOUND'
       );
     }
+
+    await accessLogService.record({
+      outcome: 'success',
+      ip,
+      userAgent,
+      linkId: link._id,
+      fileId: file._id,
+      ownerId: link.owner,
+    });
 
     const stream = await storage.getStream(file.storageKey);
 
