@@ -32,12 +32,13 @@ export function authenticate(req, res, next) {
  * Middleware to restrict access to users with specified role(s).
  */
 export function authorize(...allowedRoles) {
+  const normalizedAllowed = allowedRoles.map((r) => String(r).toUpperCase());
   return (req, res, next) => {
     if (!req.user) {
       return next(new UnauthorizedError('Authentication required', [], 'UNAUTHORIZED'));
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!normalizedAllowed.includes(String(req.user.role).toUpperCase())) {
       return next(
         new ForbiddenError('You do not have permission to perform this action', [], 'FORBIDDEN')
       );

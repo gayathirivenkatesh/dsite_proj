@@ -46,6 +46,11 @@ const userSchema = new mongoose.Schema(
       enum: ['USER', 'ADMIN'],
       default: 'USER',
     },
+    isDisabled: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     refreshTokens: [refreshTokenSchema],
   },
   {

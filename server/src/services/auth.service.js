@@ -1,7 +1,12 @@
 import { User } from '../models/user.model.js';
 import { hashPassword, verifyPassword, hashToken } from '../utils/crypto.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
-import { ConflictError, UnauthorizedError, NotFoundError } from '../utils/errors.js';
+import {
+  ConflictError,
+  UnauthorizedError,
+  NotFoundError,
+  ForbiddenError,
+} from '../utils/errors.js';
 
 // Pre-computed dummy argon2 hash for timing attack mitigation when user is not found
 const DUMMY_HASH =
@@ -66,6 +71,14 @@ export const authService = {
       throw new UnauthorizedError('Invalid email or password', [], 'INVALID_CREDENTIALS');
     }
 
+    if (user.isDisabled) {
+      throw new ForbiddenError(
+        'This account has been disabled. Please contact an administrator.',
+        [],
+        'ACCOUNT_DISABLED'
+      );
+    }
+
     // Clean up expired tokens
     const now = new Date();
     user.refreshTokens = user.refreshTokens.filter((t) => t.expiresAt > now);
@@ -107,6 +120,14 @@ export const authService = {
 
     if (!user) {
       throw new UnauthorizedError('Invalid or revoked refresh token', [], 'INVALID_REFRESH_TOKEN');
+    }
+
+    if (user.isDisabled) {
+      throw new ForbiddenError(
+        'This account has been disabled. Please contact an administrator.',
+        [],
+        'ACCOUNT_DISABLED'
+      );
     }
 
     const tokenRecord = user.refreshTokens.find((t) => t.tokenHash === incomingHash);
@@ -162,6 +183,13 @@ export const authService = {
     const user = await User.findById(userId);
     if (!user) {
       throw new NotFoundError('User not found', [], 'NOT_FOUND');
+    }
+    if (user.isDisabled) {
+      throw new ForbiddenError(
+        'This account has been disabled. Please contact an administrator.',
+        [],
+        'ACCOUNT_DISABLED'
+      );
     }
     return user;
   },

@@ -4,7 +4,11 @@ import mongoose from 'mongoose';
 let mongoServer;
 
 export async function setupTestDB() {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      launchTimeout: 60000,
+    },
+  });
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
 }

@@ -5,7 +5,7 @@ P2 Auth and RBAC: DONE
 P3 Files and storage: DONE
 P4 Share links, expiry, password: DONE
 P5 Access logs: DONE
-P6 Admin, hardening, API docs: TODO
+P6 Admin, hardening, API docs: DONE
 P7 Frontend foundation and design system: TODO
 P8 Frontend pages: TODO
 P9 Docker, CI, deployment: TODO
@@ -17,6 +17,7 @@ P10 Final audit and docs: TODO
 - Commands:
   - `npm run dev`: start backend development server
   - `npm run client:dev`: start frontend development server
+  - `npm run seed`: seed default Admin and User accounts
   - `npm run lint`: run ESLint across all workspaces
   - `npm run format:check`: verify Prettier formatting
   - `npm run test`: run server tests with Vitest
@@ -34,7 +35,7 @@ P10 Final audit and docs: TODO
 - Token rotation on every refresh: invalidates previous token, issues new pair, and guards against reuse attacks.
 - Dummy argon2 verify call executed when email does not exist to eliminate user enumeration timing attacks.
 - Strict Zod whitelisting prevents mass assignment of sensitive fields such as `role`.
-- Reusable `authenticate` (Bearer JWT) and `authorize(...roles)` middlewares guard protected resources with standard 401 and 403 error formats.
+- Reusable `authenticate` (Bearer JWT) and `authorize(...roles)` middlewares guard protected resources with standard 401 and 403 error formats (roles normalized to uppercase).
 - `mongodb-memory-server` configured for isolated, reproducible automated integration tests without external database dependencies.
 - Storage abstraction created via `BaseStorage` and `LocalStorageDriver`, safely resolving disk paths outside public web roots and blocking directory traversal.
 - Dual-layer file validation: extension allowlist checked and verified against binary magic bytes using `file-type` and null-byte scanners.
@@ -53,9 +54,16 @@ P10 Final audit and docs: TODO
 - Secrets strictly excluded from AccessLog schema and logging calls (no passwords, tokens, or token hashes stored).
 - Outbound outcomes: `success`, `wrong_password`, `expired`, `exhausted`, `revoked`, `not_found`, and `rate_limited`.
 - Owner endpoints for logs per file (`GET /api/v1/files/:id/logs`) and per link (`GET /api/v1/links/:id/logs`) enforce owner-scoping (404 on IDOR attempts) with pagination and outcome filtering.
-- Admin endpoint (`GET /api/v1/admin/logs`) provides full system audit visibility for users with ADMIN role.
+- Admin endpoints behind `authorize('ADMIN')` (list/disable users, list all files, delete any file, revoke any link, view all audit logs).
+- Account disablement: Admin can enable/disable users; disabled accounts are immediately blocked at login, refresh, and getMe endpoints with all active refresh tokens purged.
+- Self-disable prevention: Admin accounts cannot disable themselves to prevent administrative lockouts.
+- Global administrative file deletion removes the stored binary, cleans up all associated share links, and deletes the file record.
+- Global administrative share link revocation instantly invalidates public access (returns 410 on subsequent download attempts).
+- Database seed script (`server/src/scripts/seed.js`) provides idempotent creation of default Admin (`admin@vault.local`) and standard User (`user@vault.local`).
+- Comprehensive documentation created in `docs/API.md` and `SECURITY.md`.
+- Audited against `docs/BRIEF.md` security requirements; `npm audit` verified with 0 vulnerabilities.
 ## Known issues / tech debt
 - None. `npm audit` reports 0 vulnerabilities.
 ## NEXT STEP (exact, specific)
-P6 Admin, hardening, API docs: Implement admin user management (list, update status/role, delete) and file management endpoints, server hardening (security headers, trust proxy, rate-limiting polish), OpenAPI specification and docs/API.md, SECURITY.md, and audit tests.
-## Last updated: 07 Nov 2026, P5 Access logs
+P7 Frontend foundation and design system: Set up design system components (Button, Input, Card, Badge, Modal confirm dialog, Toast), API client with automatic JWT refresh interceptor, route guards (protected and role routes), and theme variables in client/.
+## Last updated: 07 Nov 2026, P6 Admin, hardening, API docs
