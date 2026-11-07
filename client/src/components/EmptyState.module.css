@@ -1,0 +1,18 @@
+/* EmptyState styling */
+.container {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--text-secondary);
+}
+.title {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+.desc {
+  margin-bottom: var(--space-4);
+}
+.action {
+  margin-top: var(--space-4);
+}
+

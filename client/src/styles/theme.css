@@ -1,40 +1,97 @@
 :root {
-  /* Warm paper-like neutrals */
+  /* ── Colour palette ───────────────────────────────────── */
   --bg-primary: #fcfaf7;
   --bg-surface: #f4eee5;
   --bg-surface-hover: #ece3d6;
   --border-subtle: #e2d7c8;
   --border-strong: #c8b9a6;
 
-  /* Deep ink text */
   --text-primary: #1c1917;
   --text-secondary: #57534e;
   --text-muted: #78716c;
 
-  /* ONE accent colour (warm terra-cotta / deep amber) */
+  /* ONE accent: warm amber / terra-cotta */
   --accent: #b45309;
   --accent-hover: #92400e;
   --accent-contrast: #ffffff;
   --accent-subtle: #fef3c7;
 
-  /* Status tokens */
-  --status-active: #15803d;
-  --status-expiring: #b45309;
-  --status-expired: #b91c1c;
-  --status-revoked: #57534e;
+  /* Semantic status */
+  --status-active-bg: #dcfce7;
+  --status-active-text: #15803d;
+  --status-active-border: #bbf7d0;
 
-  /* Typography */
+  --status-expiring-bg: #fef9c3;
+  --status-expiring-text: #a16207;
+  --status-expiring-border: #fde68a;
+
+  --status-exhausted-bg: #f1f5f9;
+  --status-exhausted-text: #475569;
+  --status-exhausted-border: #cbd5e1;
+
+  --status-expired-bg: #fee2e2;
+  --status-expired-text: #b91c1c;
+  --status-expired-border: #fecaca;
+
+  --status-revoked-bg: #f4f0eb;
+  --status-revoked-text: #57534e;
+  --status-revoked-border: #e2d7c8;
+
+  /* Feedback */
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-info: #1d4ed8;
+
+  /* ── Typography ───────────────────────────────────────── */
   --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
-  /* Shapes & motion */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* ── Spacing ──────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ── Shape & motion ───────────────────────────────────── */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-full: 9999px;
+
   --shadow-warm: 0 4px 12px rgba(28, 25, 23, 0.05);
+  --shadow-raised: 0 8px 24px rgba(28, 25, 23, 0.08);
+  --shadow-dialog: 0 20px 60px rgba(28, 25, 23, 0.18);
+
+  --transition-fast: 120ms ease-out;
   --transition-normal: 180ms ease-out;
+  --transition-slow: 280ms ease-out;
+
+  /* ── Z-index ──────────────────────────────────────────── */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-dialog: 200;
+  --z-toast: 300;
 }
 
+/* ── Dark mode ──────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-primary: #151413;
@@ -52,48 +109,148 @@
     --accent-contrast: #151413;
     --accent-subtle: #3d2c12;
 
+    --status-active-bg: #052e16;
+    --status-active-text: #4ade80;
+    --status-active-border: #14532d;
+
+    --status-expiring-bg: #422006;
+    --status-expiring-text: #fbbf24;
+    --status-expiring-border: #713f12;
+
+    --status-exhausted-bg: #1e293b;
+    --status-exhausted-text: #94a3b8;
+    --status-exhausted-border: #334155;
+
+    --status-expired-bg: #450a0a;
+    --status-expired-text: #f87171;
+    --status-expired-border: #7f1d1d;
+
+    --status-revoked-bg: #1e1c1a;
+    --status-revoked-text: #8c8276;
+    --status-revoked-border: #36322e;
+
     --shadow-warm: 0 4px 14px rgba(0, 0, 0, 0.35);
+    --shadow-raised: 0 8px 28px rgba(0, 0, 0, 0.45);
+    --shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.65);
   }
 }
 
-* {
+[data-theme='dark'] {
+  --bg-primary: #151413;
+  --bg-surface: #1e1c1a;
+  --bg-surface-hover: #292623;
+  --border-subtle: #36322e;
+  --border-strong: #4a443e;
+  --text-primary: #f5f0eb;
+  --text-secondary: #c2b9af;
+  --text-muted: #8c8276;
+  --accent: #d97706;
+  --accent-hover: #f59e0b;
+  --accent-contrast: #151413;
+  --accent-subtle: #3d2c12;
+  --shadow-warm: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* ── Reset ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  line-height: 1.5;
+  font-size: var(--text-base);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
 h2,
 h3,
-h4 {
+h4,
+h5,
+h6 {
   font-family: var(--font-serif);
   font-weight: 700;
   line-height: 1.25;
+  color: var(--text-primary);
+}
+
+h1 {
+  font-size: var(--text-4xl);
+}
+h2 {
+  font-size: var(--text-3xl);
+}
+h3 {
+  font-size: var(--text-2xl);
+}
+h4 {
+  font-size: var(--text-xl);
+}
+
+p {
+  line-height: 1.6;
 }
 
 a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 3px;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
   color: var(--accent-hover);
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+button {
+  font-family: inherit;
+  cursor: pointer;
 }
 
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ── Focus ring ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -103,4 +260,17 @@ a:hover {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Utility: sr-only ───────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

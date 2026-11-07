@@ -6,8 +6,8 @@ P3 Files and storage: DONE
 P4 Share links, expiry, password: DONE
 P5 Access logs: DONE
 P6 Admin, hardening, API docs: DONE
-P7 Frontend foundation and design system: TODO
-P8 Frontend pages: TODO
+P7 Frontend foundation and design system: DONE
+P8 Frontend pages: DONE
 P9 Docker, CI, deployment: TODO
 P10 Final audit and docs: TODO
 ## Stack and commands (fill as decided)

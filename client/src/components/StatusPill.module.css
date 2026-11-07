@@ -1,0 +1,35 @@
+/* Status pill styles */
+.pill {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active-text);
+  border-color: var(--status-active-border);
+}
+.expiring {
+  background-color: var(--status-expiring-bg);
+  color: var(--status-expiring-text);
+  border-color: var(--status-expiring-border);
+}
+.exhausted {
+  background-color: var(--status-exhausted-bg);
+  color: var(--status-exhausted-text);
+  border-color: var(--status-exhausted-border);
+}
+.expired {
+  background-color: var(--status-expired-bg);
+  color: var(--status-expired-text);
+  border-color: var(--status-expired-border);
+}
+.revoked {
+  background-color: var(--status-revoked-bg);
+  color: var(--status-revoked-text);
+  border-color: var(--status-revoked-border);
+}
+
