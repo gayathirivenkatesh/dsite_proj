@@ -8,11 +8,7 @@ import {
   useState,
 } from 'react';
 import { authApi } from '../../api/auth.js';
-import {
-  clearAccessToken,
-  setAccessToken,
-  setUnauthenticatedHandler,
-} from '../../api/client.js';
+import { clearAccessToken, setAccessToken, setUnauthenticatedHandler } from '../../api/client.js';
 
 const AuthContext = createContext(null);
 
@@ -80,7 +76,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -91,4 +87,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 }
-

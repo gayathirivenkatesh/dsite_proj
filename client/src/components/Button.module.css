@@ -10,7 +10,9 @@
   border: none;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-warm);
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .button:hover:not(:disabled) {
@@ -25,4 +27,3 @@
 .button:active:not(:disabled) {
   transform: translateY(1px);
 }
-

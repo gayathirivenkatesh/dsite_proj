@@ -15,9 +15,11 @@ export default function Field({ label, htmlFor, children, error }) {
       <label className={styles.label} htmlFor={htmlFor}>
         {label}
       </label>
-      {React.cloneElement(children, { id: htmlFor, className: `${styles.input} ${children.props.className || ''}` })}
+      {React.cloneElement(children, {
+        id: htmlFor,
+        className: `${styles.input} ${children.props.className || ''}`,
+      })}
       {error && <div className={styles.error}>{error}</div>}
     </div>
   );
 }
-

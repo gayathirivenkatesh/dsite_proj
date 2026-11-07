@@ -23,4 +23,3 @@ export default function Timeline({ items = [] }) {
     </ul>
   );
 }
-

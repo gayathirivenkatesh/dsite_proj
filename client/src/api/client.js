@@ -125,4 +125,3 @@ export const api = {
       headers: { ...options?.headers },
     }),
 };
-

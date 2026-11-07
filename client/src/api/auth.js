@@ -11,4 +11,3 @@ export const authApi = {
 
   me: () => api.get('/api/v1/users/me'),
 };
-

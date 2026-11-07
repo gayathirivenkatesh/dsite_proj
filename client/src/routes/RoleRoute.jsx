@@ -14,4 +14,3 @@ export default function RoleRoute({ requiredRole = 'ADMIN', children }) {
   if (user?.role !== requiredRole) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
-

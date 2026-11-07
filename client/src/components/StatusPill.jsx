@@ -22,4 +22,3 @@ export default function StatusPill({ status, children }) {
     </span>
   );
 }
-

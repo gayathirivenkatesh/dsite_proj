@@ -17,4 +17,3 @@ export default function EmptyState({ title, description, action }) {
     </div>
   );
 }
-

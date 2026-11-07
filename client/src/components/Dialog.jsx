@@ -11,7 +11,14 @@ import styles from './Dialog.module.css';
  *  - onConfirm: optional () => void – called when confirm button clicked
  *  - confirmLabel: optional string – label for confirm button (default "Confirm")
  */
-export default function Dialog({ open, title, children, onClose, onConfirm, confirmLabel = 'Confirm' }) {
+export default function Dialog({
+  open,
+  title,
+  children,
+  onClose,
+  onConfirm,
+  confirmLabel = 'Confirm',
+}) {
   // Close on Escape key
   useEffect(() => {
     const handler = (e) => {
@@ -27,14 +34,18 @@ export default function Dialog({ open, title, children, onClose, onConfirm, conf
     <div className={styles.backdrop} role="dialog" aria-modal="true" aria-labelledby="dialog-title">
       <div className={styles.dialog}>
         <header className={styles.header}>
-          <h2 id="dialog-title" className={styles.title}>{title}</h2>
+          <h2 id="dialog-title" className={styles.title}>
+            {title}
+          </h2>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
             &times;
           </button>
         </header>
         <div className={styles.body}>{children}</div>
         <footer className={styles.footer}>
-          <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
+          <button className={styles.cancelBtn} onClick={onClose}>
+            Cancel
+          </button>
           {onConfirm && (
             <button className={styles.confirmBtn} onClick={onConfirm}>
               {confirmLabel}
@@ -45,4 +56,3 @@ export default function Dialog({ open, title, children, onClose, onConfirm, conf
     </div>
   );
 }
-

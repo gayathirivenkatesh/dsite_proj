@@ -7,4 +7,3 @@ export const logsApi = {
     return api.get(`/api/v1/admin/logs${qs ? `?${qs}` : ''}`);
   },
 };
-
