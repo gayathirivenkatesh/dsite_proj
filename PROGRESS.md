@@ -8,7 +8,7 @@ P5 Access logs: DONE
 P6 Admin, hardening, API docs: DONE
 P7 Frontend foundation and design system: DONE
 P8 Frontend pages: DONE
-P9 Docker, CI, deployment: TODO
+P9 Docker, CI, deployment: DONE
 P10 Final audit and docs: TODO
 ## Stack and commands (fill as decided)
 - Backend: Node.js (ES modules), Express, MongoDB + Mongoose, Zod 4, argon2, jsonwebtoken, multer, file-type, helmet, cors, hpp, express-rate-limit, cookie-parser

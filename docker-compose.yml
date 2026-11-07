@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: dsite-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS:-example}
+    ports:
+      - '27017:27017'
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: dsite-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-root}:${MONGO_ROOT_PASS:-example}@mongo:27017/dsite?authSource=admin
+    depends_on:
+      - mongo
+    ports:
+      - '3000:3000'
+
+  web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: dsite-web
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+
+volumes:
+  mongo-data:
+
