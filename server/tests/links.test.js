@@ -61,10 +61,7 @@ afterAll(async () => {
 
 async function createLink(overrides = {}) {
   const body = { fileId: testFileId, ...overrides };
-  return request(app)
-    .post('/api/v1/links')
-    .set('Authorization', `Bearer ${userAToken}`)
-    .send(body);
+  return request(app).post('/api/v1/links').set('Authorization', `Bearer ${userAToken}`).send(body);
 }
 
 // ── CREATE LINK ───────────────────────────────────────────────────────────────
@@ -101,13 +98,17 @@ describe('POST /api/v1/links', () => {
 
   it('creates a link with all constraints combined', async () => {
     const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const res = await createLink({ expiresAt: future.toISOString(), maxDownloads: 3, password: 'pass' });
+    const res = await createLink({
+      expiresAt: future.toISOString(),
+      maxDownloads: 3,
+      password: 'pass',
+    });
     expect(res.status).toBe(201);
     expect(res.body.link.isPasswordProtected).toBe(true);
     expect(res.body.link.maxDownloads).toBe(3);
   });
 
-  it('returns 404 when creating link for another user\'s file', async () => {
+  it("returns 404 when creating link for another user's file", async () => {
     const res = await request(app)
       .post('/api/v1/links')
       .set('Authorization', `Bearer ${userBToken}`)
@@ -135,7 +136,7 @@ describe('GET /api/v1/links', () => {
     expect(res.body.pagination.total).toBe(2);
   });
 
-  it('User B cannot see User A\'s links', async () => {
+  it("User B cannot see User A's links", async () => {
     await createLink();
     const res = await request(app)
       .get('/api/v1/links')
@@ -167,7 +168,7 @@ describe('DELETE /api/v1/links/:id', () => {
     expect(res.body.link.isRevoked).toBe(true);
   });
 
-  it('User B cannot revoke User A\'s link', async () => {
+  it("User B cannot revoke User A's link", async () => {
     const createRes = await createLink();
     const linkId = createRes.body.link.id;
     const res = await request(app)
@@ -261,8 +262,25 @@ describe('POST /api/v1/links/public/:token/unlock', () => {
 
 // ── DOWNLOAD VIA LINK ─────────────────────────────────────────────────────────
 
-describe('POST /api/v1/links/public/:token/download', () => {
-  it('downloads a file via a valid link', async () => {
+describe('GET and POST /api/v1/links/public/:token/download', () => {
+  it('downloads a file via GET on an unprotected link', async () => {
+    const createRes = await createLink();
+    const token = createRes.body.token;
+    const res = await request(app).get(`/api/v1/links/public/${token}/download`);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toMatch(/attachment/);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+  });
+
+  it('rejects GET download with 401 when link is password-protected', async () => {
+    const createRes = await createLink({ password: 'secret' });
+    const token = createRes.body.token;
+    const res = await request(app).get(`/api/v1/links/public/${token}/download`);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('PASSWORD_REQUIRED');
+  });
+
+  it('downloads a file via a valid link (POST)', async () => {
     const createRes = await createLink();
     const token = createRes.body.token;
     const res = await request(app).post(`/api/v1/links/public/${token}/download`);
@@ -364,9 +382,7 @@ describe('POST /api/v1/links/public/:token/download', () => {
     );
     const results = await Promise.allSettled(requests);
 
-    const statuses = results
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => r.value.status);
+    const statuses = results.filter((r) => r.status === 'fulfilled').map((r) => r.value.status);
 
     const successes = statuses.filter((s) => s === 200).length;
     const failures = statuses.filter((s) => s === 410).length;

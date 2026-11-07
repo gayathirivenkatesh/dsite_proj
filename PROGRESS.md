@@ -21,13 +21,7 @@ P10 Final audit and docs: TODO
   - `npm run format:check`: verify Prettier formatting
   - `npm run test`: run server tests with Vitest
   - `npm run build --workspace=client`: build frontend bundle
-- Share link tokens: crypto.randomBytes(40) URL-safe, only SHA-256 hash stored in DB; raw token returned once at creation.
-- Atomic `findOneAndUpdate` with `$and` and dual `$or` conditions (time expiry + count limit) used for download enforcement. A bare JS object cannot hold two `$or` keys — the second silently overwrites the first; the fix is `$and: [ {$or: [...]}, {$or: [...]} ]`.
-- IP-based lockout for password unlock: 5 failed attempts within a 1-hour rolling window → 15-minute lockout stored in the link document's `failedAttempts` embedded array.
-- `getPublicMetadata` hides file info (name, size, mimeType) entirely when link is password-protected.
-- `tokenHash`, `passwordHash`, and `failedAttempts` stripped from all toJSON serializations.
-- Public download endpoint uses POST (not GET) so password can be supplied in the request body — never in URL/query string.
-- Concurrency test fires 10 parallel requests at a `maxDownloads: 1` link and asserts exactly 1 returns 200 and 9 return 410.
+## Decisions
 - Kept root directory at `d:\dsite_proj` with npm workspaces `server` and `client`.
 - Express app factory (`createApp`) in `server/src/app.js` is isolated from the network listener in `server/src/server.js` for fast, decoupled Supertest integration testing.
 - Zod schema validates all environment variables at startup and terminates immediately with formatted errors if invalid.
@@ -47,8 +41,15 @@ P10 Final audit and docs: TODO
 - User filenames are sanitized (stripping directory traversal, null bytes, control characters, leading/trailing dots) and preserved solely as metadata; disk storage filenames use random 24-byte hex strings.
 - Strict owner-scoping on all file operations (`{ _id: fileId, owner: req.user.id }`), returning 404 on IDOR attempts to prevent leaking file existence.
 - File downloads streamed with `Content-Disposition: attachment` (RFC 5987 encoded) and `X-Content-Type-Options: nosniff` preventing browser MIME execution.
+- Share link tokens: crypto.randomBytes(40) URL-safe, only SHA-256 hash stored in DB; raw token returned once at creation.
+- Atomic `findOneAndUpdate` with `$and` and dual `$or` conditions (time expiry + count limit) used for download enforcement. A bare JS object cannot hold two `$or` keys — the second silently overwrites the first; the fix is `$and: [ {$or: [...]}, {$or: [...]} ]`.
+- IP-based lockout for password unlock: 5 failed attempts within a 1-hour rolling window -> 15-minute lockout stored in the link document's `failedAttempts` embedded array.
+- `getPublicMetadata` hides file info (name, size, mimeType) entirely when link is password-protected.
+- `tokenHash`, `passwordHash`, and `failedAttempts` stripped from all toJSON serializations.
+- Public download endpoint supports GET for unprotected files and POST with `{ password }` in the request body for protected links — passwords are never accepted in URL/query strings.
+- Concurrency test fires 10 parallel requests at a `maxDownloads: 1` link and asserts exactly 1 returns 200 and 9 return 410.
 ## Known issues / tech debt
 - None. `npm audit` reports 0 vulnerabilities.
 ## NEXT STEP (exact, specific)
-P4 Share links, expiry, password: Implement ShareLink model with tokenHash (SHA-256), create/list/revoke link endpoints, expiry by time and atomic conditional $inc max download count (Key Challenge A: concurrency test required), optional argon2 link password with POST verification (Key Challenge B: rate-limiting & temporary lockout), public download page API endpoints (metadata, unlock, download), and integration tests.
-## Last updated: 06 Nov 2026, P3 Files and storage
+P5 Access logs: Implement AccessLog model ({ outcome, timestamp, ip, userAgent, linkId, fileId, reason }), log every download success and failure without logging passwords or tokens, ensure logging failures never break requests, owner endpoints for logs per file/link (paginated), admin endpoint for all logs (paginated), and comprehensive integration tests.
+## Last updated: 07 Nov 2026, P4 Share links, expiry, password

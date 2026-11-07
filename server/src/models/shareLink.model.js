@@ -105,4 +105,3 @@ shareLinkSchema.methods.toJSON = function () {
 };
 
 export const ShareLink = mongoose.model('ShareLink', shareLinkSchema);
-

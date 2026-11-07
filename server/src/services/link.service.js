@@ -325,7 +325,11 @@ export const linkService = {
     // Step 4: Stream the file
     const file = await File.findById(updated.file);
     if (!file) {
-      throw new NotFoundError('The file associated with this link no longer exists', [], 'NOT_FOUND');
+      throw new NotFoundError(
+        'The file associated with this link no longer exists',
+        [],
+        'NOT_FOUND'
+      );
     }
 
     const stream = await storage.getStream(file.storageKey);
