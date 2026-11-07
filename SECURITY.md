@@ -113,3 +113,4 @@ If you discover a potential security vulnerability in this project:
 2. Email full reproduction details to `security@vault.local`.
 3. Provide sample payloads, steps to reproduce, and potential impact.
 4. The security team will acknowledge receipt within 24 hours and provide a remediation timeline.
+

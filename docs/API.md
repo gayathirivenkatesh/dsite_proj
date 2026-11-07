@@ -393,3 +393,4 @@ System-wide access log audit trail across all files, links, and users.
 - **Authentication**: `Bearer <adminAccessToken>`
 - **Query Parameters**: `page`, `limit`, `outcome`, `fileId`, `linkId`
 - **Response**: `200 OK`
+
