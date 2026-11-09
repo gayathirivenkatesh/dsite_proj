@@ -3,11 +3,17 @@ import { config } from '../config/env.js';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 
+/**
+ * When client and server are on different domains (production cross-site),
+ * cookies must be SameSite=None; Secure so browsers forward them.
+ * Locally (same-origin via Vite proxy, or both on localhost) SameSite=lax works fine.
+ */
 function getCookieOptions(expiresAt) {
+  const isProduction = config.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: config.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/api/v1/auth',
     expires: expiresAt,
   };
@@ -97,7 +103,7 @@ export const authController = {
       res.clearCookie(REFRESH_COOKIE_NAME, {
         httpOnly: true,
         secure: config.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/api/v1/auth',
       });
 
