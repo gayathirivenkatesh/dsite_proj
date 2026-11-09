@@ -6,6 +6,13 @@ import { sanitizeInput } from '../src/middlewares/sanitize.js';
 describe('Server Foundation Smoke Tests', () => {
   const app = createApp();
 
+  it('GET / returns 200 with service info and status ok', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('status', 'ok');
+    expect(res.body).toHaveProperty('name', 'Secure File Vault API');
+  });
+
   it('GET /health returns 200 with status ok and timestamp', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
