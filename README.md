@@ -202,11 +202,8 @@ dsite_proj/
 ├── .dockerignore                  # Docker ignore patterns
 ├── .env.example                   # Backend environment template
 ├── docs/
-│   ├── BRIEF.md                   # Assessment requirements
-│   ├── API.md                     # REST API reference
-│   └── CHECKLIST.md               # Requirement verification audit
+│   └── API.md                     # REST API reference
 ├── SECURITY.md                    # Security architecture & disclosures
-├── PROGRESS.md                    # Phase progression log
 ├── server/
 │   ├── Dockerfile                 # Non-root multi-stage API build
 │   └── src/

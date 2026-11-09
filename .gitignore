@@ -26,6 +26,8 @@ coverage/
 # Assessment progress & internal checklists
 PROGRESS.md
 docs/CHECKLIST.md
+AGENTS.md
+docs/BRIEF.md
 
 # Logs
 logs/
