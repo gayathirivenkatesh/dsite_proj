@@ -68,7 +68,7 @@ async function request(path, options = {}, isRetry = false) {
     headers,
   });
 
-  if (res.status === 401 && !isRetry) {
+  if (res.status === 401 && !isRetry && !path.startsWith('/api/v1/auth/')) {
     try {
       await refreshAccessToken();
       return request(path, options, true);

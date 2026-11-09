@@ -54,7 +54,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (name, email, password) => {
-    await authApi.register({ name, email, password });
+    const data = await authApi.register({ name, email, password });
+    if (data?.accessToken) {
+      setAccessToken(data.accessToken);
+    }
+    if (data?.user) {
+      setUser(data.user);
+    }
+    return data?.user;
   }, []);
 
   const logout = useCallback(async () => {

@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   const handleToggleUser = async () => {
     const { user, willDisable } = userConfirmDialog;
     try {
-      await adminApi.setUserStatus(user._id, willDisable);
+      await adminApi.setUserStatus(user.id || user._id, willDisable);
       toast.success(`User ${user.email} ${willDisable ? 'disabled' : 'enabled'}`);
       fetchUsers();
     } catch (err) {
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
   const handleDeleteFile = async () => {
     const { file } = deleteFileDialog;
     try {
-      await adminApi.deleteFile(file._id);
+      await adminApi.deleteFile(file.id || file._id);
       toast.success(`File "${file.originalName}" permanently deleted from vault`);
       fetchFiles();
     } catch (err) {
@@ -219,7 +219,10 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u._id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <tr
+                        key={u.id || u._id}
+                        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      >
                         <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
                           {u.name || u.email}
                         </td>
@@ -299,7 +302,10 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {files.map((f) => (
-                      <tr key={f._id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <tr
+                        key={f.id || f._id}
+                        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      >
                         <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
                           {f.originalName}
                         </td>

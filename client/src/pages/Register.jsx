@@ -8,7 +8,7 @@ import Button from '../components/Button.jsx';
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, login } = useAuth();
+  const { register } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -26,7 +26,6 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       await register(form.name, form.email, form.password);
-      await login(form.email, form.password);
       toast.success('Account created successfully');
       navigate('/dashboard');
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { filesApi } from '../api/files.js';
 import { linksApi } from '../api/links.js';
+import { getAccessToken } from '../api/client.js';
 import { useToast } from '../features/toast/ToastContext.jsx';
 import Button from '../components/Button.jsx';
 import Field from '../components/Field.jsx';
@@ -107,6 +108,11 @@ export default function Dashboard() {
     xhr.open('POST', `${import.meta.env.VITE_API_URL ?? ''}/api/v1/files`);
     xhr.withCredentials = true;
 
+    const token = getAccessToken();
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
     xhr.upload.onprogress = (ev) => {
       if (ev.lengthComputable) {
         setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
@@ -144,7 +150,7 @@ export default function Dashboard() {
     const { file, newName } = renameDialog;
     if (!newName.trim()) return;
     try {
-      await filesApi.rename(file._id, newName.trim());
+      await filesApi.rename(file.id || file._id, newName.trim());
       toast.success('File renamed');
       fetchFiles();
     } catch (e) {
@@ -157,7 +163,7 @@ export default function Dashboard() {
   const confirmDelete = async () => {
     const { file } = deleteDialog;
     try {
-      await filesApi.delete(file._id);
+      await filesApi.delete(file.id || file._id);
       toast.success('File and all its share links deleted');
       fetchFiles();
     } catch (e) {
@@ -210,7 +216,7 @@ export default function Dashboard() {
         payload.password = shareDialog.password.trim();
       }
 
-      const res = await linksApi.create(shareDialog.file._id, payload);
+      const res = await linksApi.create(shareDialog.file.id || shareDialog.file._id, payload);
       const publicUrl = `${window.location.origin}/share/${res.token}`;
       setShareDialog((prev) => ({ ...prev, generatedLink: publicUrl }));
       toast.success('Share link generated');
@@ -222,7 +228,7 @@ export default function Dashboard() {
   const openLinksModal = async (file) => {
     setLinksModal({ open: true, file, links: [], loading: true });
     try {
-      const data = await linksApi.list({ fileId: file._id });
+      const data = await linksApi.list({ fileId: file.id || file._id });
       setLinksModal({ open: true, file, links: data.links || [], loading: false });
     } catch (err) {
       toast.error(err.message || 'Failed to load links');
@@ -235,7 +241,7 @@ export default function Dashboard() {
       await linksApi.revoke(linkId);
       toast.success('Share link revoked');
       if (linksModal.file) {
-        const data = await linksApi.list({ fileId: linksModal.file._id });
+        const data = await linksApi.list({ fileId: linksModal.file.id || linksModal.file._id });
         setLinksModal((prev) => ({ ...prev, links: data.links || [] }));
       }
     } catch (err) {
@@ -246,7 +252,7 @@ export default function Dashboard() {
   const openLogsModal = async (file) => {
     setLogsModal({ open: true, file, logs: [], loading: true, viewMode: 'timeline' });
     try {
-      const data = await filesApi.logs(file._id);
+      const data = await filesApi.logs(file.id || file._id);
       setLogsModal({
         open: true,
         file,
@@ -310,7 +316,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {files.map((file) => (
               <article
-                key={file._id}
+                key={file.id || file._id}
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   border: '1px solid var(--border-subtle)',
@@ -373,7 +379,7 @@ export default function Dashboard() {
 
                   {/* Direct owner download */}
                   <a
-                    href={`${import.meta.env.VITE_API_URL ?? ''}/api/v1/files/${file._id}/download`}
+                    href={`${import.meta.env.VITE_API_URL ?? ''}/api/v1/files/${file.id || file._id}/download`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -719,7 +725,7 @@ export default function Dashboard() {
               const { status, text } = computeLinkStatus(lnk);
               return (
                 <div
-                  key={lnk._id}
+                  key={lnk.id || lnk._id}
                   style={{
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-sm)',
@@ -738,7 +744,7 @@ export default function Dashboard() {
                     <StatusPill status={status}>{text}</StatusPill>
                     {!lnk.isRevoked && (
                       <Button
-                        onClick={() => handleRevokeLink(lnk._id)}
+                        onClick={() => handleRevokeLink(lnk.id || lnk._id)}
                         style={{
                           padding: '0.2rem 0.5rem',
                           fontSize: '0.75rem',

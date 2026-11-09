@@ -65,8 +65,10 @@ P10 Final audit and docs: DONE
 - Multi-stage non-root Dockerfiles configured for server (API) and client (NGINX web) with `docker-compose.yml` for unified local execution.
 - Comprehensive documentation created in `README.md`, `docs/API.md`, `SECURITY.md`, and `docs/CHECKLIST.md`.
 - Full audit completed: all 95 tests passing, ESLint 0 errors, Prettier verified, 0 npm audit vulnerabilities, no committed secrets.
+- Extended user registration schema and User model with optional `name` field (max 100 characters) to support UI registration forms, admin search by name/email, and display name fallbacks.
+- Enhanced file rename validation to accept both `name` and `originalName` parameters with automated transform.
 ## Known issues / tech debt
 - None. `npm audit` reports 0 vulnerabilities. All test suites passing.
 ## NEXT STEP (exact, specific)
 - All 10 phases completed and verified. System is ready for production evaluation, container deployment, or GitHub submission.
-## Last updated: 07 Nov 2026, P10 Final audit and docs
+## Last updated: 09 Nov 2026, Post-audit fix for user registration schema
