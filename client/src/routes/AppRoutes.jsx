@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/Login.jsx';
 import RegisterPage from '../pages/Register.jsx';
@@ -8,6 +8,11 @@ import AdminDashboard from '../pages/AdminDashboard.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import RoleRoute from './RoleRoute.jsx';
 
+function LinkRedirect() {
+  const { token } = useParams();
+  return <Navigate to={`/share/${token}`} replace />;
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -16,7 +21,7 @@ export default function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/share/:token" element={<PublicDownload />} />
-      <Route path="/links/:token" element={<Navigate to="/share/:token" replace />} />
+      <Route path="/links/:token" element={<LinkRedirect />} />
 
       {/* Authenticated routes */}
       <Route

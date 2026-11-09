@@ -51,7 +51,7 @@ export const linkController = {
         ip: req.ip,
         userAgent: req.get('user-agent') || null,
       });
-      return res.json(meta);
+      return res.json({ link: meta, ...meta });
     } catch (err) {
       return next(err);
     }

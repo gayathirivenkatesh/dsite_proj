@@ -34,9 +34,10 @@ export default function PublicDownload() {
       setErrorMessage('');
       try {
         const data = await linksApi.publicMeta(token);
-        setLinkMeta(data.link);
-        if (data.link?.file) {
-          setFileMeta(data.link.file);
+        const link = data?.link || data;
+        setLinkMeta(link);
+        if (link?.file) {
+          setFileMeta(link.file);
         }
       } catch (err) {
         if (err.status === 404) {
@@ -94,11 +95,13 @@ export default function PublicDownload() {
   };
 
   const handleDownload = () => {
-    if (linkMeta?.isPasswordProtected && !isUnlocked) {
+    const isProtected = Boolean(linkMeta?.isPasswordProtected);
+
+    if (isProtected && !isUnlocked) {
       return;
     }
 
-    if (linkMeta?.isPasswordProtected && password) {
+    if (isProtected && password) {
       // POST form download for password-protected link
       const form = document.createElement('form');
       form.method = 'POST';
