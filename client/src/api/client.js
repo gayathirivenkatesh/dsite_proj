@@ -86,7 +86,14 @@ async function request(path, options = {}, isRetry = false) {
     } catch {
       body = {};
     }
-    const message = body?.error?.message ?? res.statusText;
+    const detailMsg =
+      Array.isArray(body?.error?.details) && body.error.details.length > 0
+        ? body.error.details
+            .map((d) => d.message)
+            .filter(Boolean)
+            .join(', ')
+        : null;
+    const message = detailMsg || body?.error?.message || res.statusText;
     const code = body?.error?.code ?? 'UNKNOWN';
     throw new ApiError(res.status, message, code, body?.error?.details);
   }
