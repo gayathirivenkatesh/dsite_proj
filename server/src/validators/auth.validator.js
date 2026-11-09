@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 export const registerSchema = z
   .object({
-    name: z.string().trim().max(100, 'Name cannot exceed 100 characters').optional().default(''),
+    name: z
+      .string()
+      .trim()
+      .max(100, 'Name cannot exceed 100 characters')
+      .optional()
+      .default(''),
     email: z
       .string()
       .trim()
