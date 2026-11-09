@@ -1,4 +1,3 @@
-/* Toast container */
 .container {
   position: fixed;
   bottom: var(--space-4);
@@ -6,29 +5,39 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-width: 20rem;
+  max-width: 24rem;
   z-index: var(--z-toast);
 }
+
 .toast {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-sm);
-  color: #fff;
-  box-shadow: var(--shadow-warm);
-  animation: slideIn var(--transition-normal) forwards;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-dialog);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  animation: slideIn 180ms ease-out forwards;
 }
+
 .success {
-  background-color: var(--color-success);
+  border-left: 4px solid var(--status-active-text);
 }
+
 .error {
-  background-color: var(--color-danger);
+  border-left: 4px solid var(--accent);
 }
+
 .info {
-  background-color: var(--color-info);
+  border-left: 4px solid var(--border-strong);
 }
+
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;

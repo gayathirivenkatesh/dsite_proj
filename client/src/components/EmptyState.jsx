@@ -1,16 +1,20 @@
 import React from 'react';
 import styles from './EmptyState.module.css';
+import { PostLockKeyIllustration } from './PostRoomIcons.jsx';
 
 /**
- * Displayed when a list or view has no data.
- * Props:
- *   - title: string – short heading
- *   - description: optional string – longer help text
- *   - action: optional React node – e.g., a button to create something
+ * Editorial Empty State for The Post Room.
  */
-export default function EmptyState({ title, description, action }) {
+export default function EmptyState({
+  title = 'Nothing here yet',
+  description = 'Drop a file to start your vault.',
+  action,
+}) {
   return (
     <div className={styles.container} role="status" aria-live="polite">
+      <div className={styles.illustration}>
+        <PostLockKeyIllustration size={64} />
+      </div>
       <h2 className={styles.title}>{title}</h2>
       {description && <p className={styles.desc}>{description}</p>}
       {action && <div className={styles.action}>{action}</div>}

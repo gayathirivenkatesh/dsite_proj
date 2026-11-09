@@ -1,34 +1,52 @@
-/* Status pill styles */
-.pill {
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  border: 1px solid transparent;
+/* The Post Room Rubber Stamp mark */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid currentColor;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: rotate(-1deg);
+  transition: transform var(--transition-fast);
 }
+
+.stamp:hover {
+  transform: rotate(0deg);
+}
+
 .active {
-  background-color: var(--status-active-bg);
   color: var(--status-active-text);
+  background-color: var(--status-active-bg);
   border-color: var(--status-active-border);
 }
+
 .expiring {
-  background-color: var(--status-expiring-bg);
   color: var(--status-expiring-text);
+  background-color: var(--status-expiring-bg);
   border-color: var(--status-expiring-border);
 }
+
 .exhausted {
-  background-color: var(--status-exhausted-bg);
   color: var(--status-exhausted-text);
+  background-color: var(--status-exhausted-bg);
   border-color: var(--status-exhausted-border);
 }
+
 .expired {
-  background-color: var(--status-expired-bg);
   color: var(--status-expired-text);
+  background-color: var(--status-expired-bg);
   border-color: var(--status-expired-border);
 }
+
 .revoked {
-  background-color: var(--status-revoked-bg);
   color: var(--status-revoked-text);
+  background-color: var(--status-revoked-bg);
   border-color: var(--status-revoked-border);
 }

@@ -2,12 +2,13 @@ import React from 'react';
 import styles from './StatusPill.module.css';
 
 /**
- * Status pill displaying a label with appropriate colour.
+ * Rubber-stamp style status mark.
+ * Outlined text in a slightly rotated rectangle with earthy tones.
  * Props:
- *   - status: one of 'active', 'expiring', 'exhausted', 'expired', 'revoked'
- *   - children: optional custom text (fallback to capitalised status)
+ *   - status: 'active' | 'expiring' | 'exhausted' | 'expired' | 'revoked'
+ *   - children: optional custom text (always paired with words)
  */
-export default function StatusPill({ status, children }) {
+export default function StatusStamp({ status = 'active', children, className = '' }) {
   const map = {
     active: styles.active,
     expiring: styles.expiring,
@@ -15,10 +16,24 @@ export default function StatusPill({ status, children }) {
     expired: styles.expired,
     revoked: styles.revoked,
   };
-  const className = map[status] || '';
+
+  const statusClass = map[status] || styles.active;
+
+  const defaultWord =
+    {
+      active: 'Active',
+      expiring: 'Expiring soon',
+      exhausted: 'Used up',
+      expired: 'Expired',
+      revoked: 'Revoked',
+    }[status] || status;
+
   return (
-    <span className={`${styles.pill} ${className}`.trim()}>
-      {children || status.charAt(0).toUpperCase() + status.slice(1)}
+    <span className={`${styles.stamp} ${statusClass} ${className}`.trim()}>
+      {children || defaultWord}
     </span>
   );
 }
+
+// Re-export as StatusPill for backward compatibility
+export { StatusStamp as StatusPill };
