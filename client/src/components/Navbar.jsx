@@ -98,7 +98,7 @@ export default function Navbar() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  {user?.name}
+                  {user?.name || user?.email}
                 </span>
                 {isAdmin && <StatusPill status="active">Admin</StatusPill>}
               </div>
@@ -147,4 +147,3 @@ export default function Navbar() {
     </header>
   );
 }
-

@@ -10,7 +10,7 @@ export const filesApi = {
 
   get: (id) => api.get(`/api/v1/files/${id}`),
 
-  rename: (id, originalName) => api.patch(`/api/v1/files/${id}`, { originalName }),
+  rename: (id, name) => api.patch(`/api/v1/files/${id}`, { name, originalName: name }),
 
   delete: (id) => api.delete(`/api/v1/files/${id}`),
 

@@ -220,7 +220,9 @@ export default function AdminDashboard() {
                   <tbody>
                     {users.map((u) => (
                       <tr key={u._id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>{u.name}</td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
+                          {u.name || u.email}
+                        </td>
                         <td style={{ padding: '0.75rem 1rem' }}>{u.email}</td>
                         <td style={{ padding: '0.75rem 1rem' }}>
                           <StatusPill status={u.role === 'ADMIN' ? 'active' : 'revoked'}>

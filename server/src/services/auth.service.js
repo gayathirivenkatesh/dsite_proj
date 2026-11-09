@@ -13,7 +13,7 @@ const DUMMY_HASH =
   '$argon2id$v=19$m=65536,t=3,p=1$c29tZXNhbHQ1Njc4OTAxMg$dGVzdGhhc2h2YWx1ZTEyMzQ1Njc4OTA';
 
 export const authService = {
-  async register({ email, password, ip = '', userAgent = '' }) {
+  async register({ name = '', email, password, ip = '', userAgent = '' }) {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new ConflictError(
@@ -28,6 +28,7 @@ export const authService = {
     const tokenHash = hashToken(refreshToken.token);
 
     const user = new User({
+      name: name ? name.trim() : '',
       email,
       passwordHash,
       role: 'USER', // Always default to USER, never accept role from registration payload

@@ -16,12 +16,13 @@ function getCookieOptions(expiresAt) {
 export const authController = {
   async register(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { name, email, password } = req.body;
       const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const { user, accessToken, refreshToken, refreshTokenExpiresAt } = await authService.register(
         {
+          name,
           email,
           password,
           ip,

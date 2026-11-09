@@ -16,6 +16,7 @@ async function seed() {
     if (!admin) {
       const passwordHash = await hashPassword(adminPassword);
       admin = await User.create({
+        name: 'System Administrator',
         email: adminEmail,
         passwordHash,
         role: 'ADMIN',
@@ -34,6 +35,7 @@ async function seed() {
     if (!standardUser) {
       const passwordHash = await hashPassword(userPassword);
       standardUser = await User.create({
+        name: 'Standard User',
         email: userEmail,
         passwordHash,
         role: 'USER',

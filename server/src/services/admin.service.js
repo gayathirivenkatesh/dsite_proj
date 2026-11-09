@@ -11,7 +11,10 @@ export const adminService = {
   async listUsers({ page = 1, limit = 20, search }) {
     const query = {};
     if (search) {
-      query.email = { $regex: search, $options: 'i' };
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+      ];
     }
 
     const skip = (page - 1) * limit;

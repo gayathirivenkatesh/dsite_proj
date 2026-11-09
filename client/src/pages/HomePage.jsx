@@ -86,7 +86,7 @@ export default function HomePage() {
           {isAuthenticated ? (
             <Link to="/dashboard">
               <Button style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-                Open Your Vault ({user?.name})
+                Open Your Vault ({user?.name || user?.email})
               </Button>
             </Link>
           ) : (

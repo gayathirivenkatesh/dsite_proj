@@ -44,6 +44,21 @@ describe('Auth & RBAC Integration Tests', () => {
       expect(cookies.some((c) => c.includes('refreshToken=') && c.includes('HttpOnly'))).toBe(true);
     });
 
+    it('successfully registers a user with optional name, email, and password', async () => {
+      const res = await request(app).post('/api/v1/auth/register').send({
+        name: 'Bob Builder',
+        email: 'bob@example.com',
+        password: 'Password123!',
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.user).toMatchObject({
+        name: 'Bob Builder',
+        email: 'bob@example.com',
+        role: 'USER',
+      });
+    });
+
     it('rejects registration with invalid email format', async () => {
       const res = await request(app).post('/api/v1/auth/register').send({
         email: 'not-an-email',

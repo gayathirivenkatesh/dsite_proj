@@ -50,16 +50,19 @@ Creates a new user account. Role is hardcoded to `USER`.
 - **Request Body**:
 ```json
 {
+  "name": "Jane Doe",
   "email": "user@example.com",
   "password": "Password1!"
 }
 ```
+*Note: `name` is optional (max 100 characters).*
 - **Response**: `201 Created`
   - Sets httpOnly `refreshToken` cookie.
 ```json
 {
   "user": {
     "id": "672d24e12c12a8849b291a11",
+    "name": "Jane Doe",
     "email": "user@example.com",
     "role": "USER",
     "isDisabled": false,
