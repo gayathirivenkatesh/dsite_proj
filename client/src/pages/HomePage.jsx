@@ -1,7 +1,9 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Navbar from '../components/Navbar.jsx';
+import { PostLockKeyIllustration, KeyIcon, LockIcon } from '../components/PostRoomIcons.jsx';
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth();
@@ -13,160 +15,197 @@ export default function HomePage() {
       <main
         style={{
           flex: 1,
-          maxWidth: '720px',
+          maxWidth: '68rem',
           margin: '0 auto',
           padding: '4rem 1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2rem',
-          textAlign: 'center',
+          width: '100%',
         }}
       >
-        <header>
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              margin: '0 auto 1.5rem',
-              borderRadius: '50%',
-              backgroundColor: 'var(--accent-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent)',
-            }}
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              <circle cx="12" cy="16" r="1.5" />
-            </svg>
-          </div>
-
-          <span
-            style={{
-              display: 'inline-block',
-              fontSize: '0.875rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--accent)',
-              fontWeight: 600,
-              marginBottom: '0.75rem',
-            }}
-          >
-            Cryptographic Storage & Sharing
-          </span>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', lineHeight: 1.2 }}>
-            Keep what matters safe. Hand the key to who you choose.
-          </h1>
-          <p
-            style={{
-              color: 'var(--text-secondary)',
-              fontSize: '1.125rem',
-              maxWidth: '580px',
-              margin: '0 auto',
-            }}
-          >
-            Self-expiring, password-protected links with race-safe download limits and an immutable,
-            transparent access history.
-          </p>
-        </header>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
-          {isAuthenticated ? (
-            <Link to="/dashboard">
-              <Button style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-                Open Your Vault ({user?.name || user?.email})
-              </Button>
-            </Link>
-          ) : (
-            <>
-              <Link to="/register">
-                <Button style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-                  Create Vault Account
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button
-                  style={{
-                    padding: '0.75rem 2rem',
-                    fontSize: '1rem',
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--border-strong)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  Sign In
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-
-        <section
+        <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1.25rem',
-            marginTop: '2rem',
-            textAlign: 'left',
+            gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
+            gap: '4rem',
+            alignItems: 'start',
           }}
+          className="editorial-grid"
         >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.5rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Atomic Expiry</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              Server-enforced count and time bounds using single atomic operations. Concurrency-safe
-              under load.
+          {/* Editorial column */}
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.8125rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--accent)',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <span>The Post Room</span>
+              <span>•</span>
+              <span>Dispatches & Vault</span>
+            </div>
+
+            <h1
+              style={{
+                fontSize: 'clamp(2.25rem, 4vw, 3.25rem)',
+                lineHeight: 1.15,
+                marginBottom: '1.5rem',
+                fontFamily: 'var(--font-serif)',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+              }}
+            >
+              Keep a document safe.
+              <br />
+              Hand someone a key.
+            </h1>
+
+            <p
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: '1.125rem',
+                lineHeight: 1.65,
+                marginBottom: '2rem',
+                maxWidth: '56ch',
+              }}
+            >
+              When you leave a file here, you set the terms: how many times the key may be used,
+              when it runs out, and whether it requires a sealed password. Once fulfilled, the lock
+              shuts permanently.
             </p>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+                marginBottom: '3rem',
+              }}
+            >
+              {isAuthenticated ? (
+                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+                  <Button variant="primary">Open Your Vault ({user?.name || user?.email})</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register" style={{ textDecoration: 'none' }}>
+                    <Button variant="primary">Start Your Vault</Button>
+                  </Link>
+                  <Link to="/login" style={{ textDecoration: 'none' }}>
+                    <Button variant="secondary">Sign In</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Ruled ledger principles */}
+            <div
+              style={{
+                borderTop: '1px solid var(--border-subtle)',
+                paddingTop: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.5rem',
+                maxWidth: '58ch',
+              }}
+            >
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                <span style={{ color: 'var(--accent)', marginTop: '0.2rem', flexShrink: 0 }}>
+                  <KeyIcon size={18} />
+                </span>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>
+                    Race-safe download counts
+                  </h3>
+                  <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
+                    If a key is good for three downloads, three copies are served. Concurrent races
+                    are checked atomically on the server—no duplicate handoffs.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                <span style={{ color: 'var(--accent)', marginTop: '0.2rem', flexShrink: 0 }}>
+                  <LockIcon size={18} />
+                </span>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>
+                    Argon2 password locks
+                  </h3>
+                  <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
+                    File contents and metadata remain sealed until unlocked with the correct phrase.
+                    Five failed tries lockout the sender&apos;s key for fifteen minutes.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
+          {/* Right column: tactile stationer note illustration */}
           <div
             style={{
-              backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface)',
               borderRadius: 'var(--radius-md)',
-              padding: '1.5rem',
+              padding: '2.5rem 2rem',
+              position: 'relative',
             }}
           >
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Password Locked</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              Argon2 protected links with brute-force rate limiting and automated IP lockouts.
-            </p>
-          </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                color: 'var(--accent)',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <PostLockKeyIllustration size={88} />
+            </div>
 
-          <div
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.5rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Full Audit Trail</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              Every access attempt—successes, password failures, or expirations—is recorded for
-              transparency.
-            </p>
+            <div
+              style={{
+                borderTop: '1px dashed var(--border-strong)',
+                paddingTop: '1.25rem',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.8125rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.7,
+              }}
+            >
+              <div
+                style={{
+                  color: 'var(--text-primary)',
+                  fontWeight: 600,
+                  marginBottom: '0.5rem',
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1rem',
+                }}
+              >
+                Stationery Note
+              </div>
+              <div>• Recipients never need an account.</div>
+              <div>• No tracker pixels, no decorative analytics.</div>
+              <div>• The owner sees who opened the file and when.</div>
+              <div>• Revoke any key with a single decision.</div>
+            </div>
           </div>
-        </section>
+        </div>
       </main>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .editorial-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2.5rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

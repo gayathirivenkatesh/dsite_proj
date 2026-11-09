@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { linksApi } from '../api/links.js';
 import Button from '../components/Button.jsx';
 import Field from '../components/Field.jsx';
 import Spinner from '../components/Spinner.jsx';
+import StatusStamp from '../components/StatusPill.jsx';
+import { KeyIcon, LockIcon } from '../components/PostRoomIcons.jsx';
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B';
@@ -42,24 +44,24 @@ export default function PublicDownload() {
       } catch (err) {
         if (err.status === 404) {
           setErrorStatus('404');
-          setErrorMessage('This link does not exist or was removed.');
+          setErrorMessage('This key does not exist or has been taken out of service.');
         } else if (err.status === 410) {
           if (err.code === 'LINK_REVOKED') {
             setErrorStatus('410_revoked');
-            setErrorMessage('The sender revoked this share link.');
+            setErrorMessage('This key was revoked by the sender.');
           } else if (err.code === 'LINK_EXHAUSTED') {
             setErrorStatus('410_exhausted');
-            setErrorMessage('This link has reached its maximum download limit and is now closed.');
+            setErrorMessage('This key has been used up. All allowed copies have been retrieved.');
           } else {
             setErrorStatus('410_expired');
-            setErrorMessage('This link has expired and is no longer available.');
+            setErrorMessage('This key has expired and the lock is shut.');
           }
         } else if (err.status === 429) {
           setErrorStatus('429');
-          setErrorMessage('Too many requests. Please wait a few moments and refresh.');
+          setErrorMessage('Too many attempts. The keyhole is locked for fifteen minutes.');
         } else {
           setErrorStatus('500');
-          setErrorMessage(err.message || 'Unable to open this link.');
+          setErrorMessage(err.message || 'We could not reach the post room.');
         }
       } finally {
         setLoading(false);
@@ -84,10 +86,10 @@ export default function PublicDownload() {
     } catch (err) {
       if (err.status === 429) {
         setUnlockError(
-          'Too many failed attempts. This link is temporarily locked out for security. Try again in 15 minutes.'
+          'Too many failed attempts. For security, this key is locked for 15 minutes.'
         );
       } else {
-        setUnlockError('Incorrect password. Please verify and try again.');
+        setUnlockError('Wrong password. Please verify the phrase and try again.');
       }
     } finally {
       setIsUnlocking(false);
@@ -131,7 +133,7 @@ export default function PublicDownload() {
         backgroundColor: 'var(--bg-primary)',
       }}
     >
-      {/* Minimal Header */}
+      {/* Calm, unbranded postal header */}
       <header
         style={{
           padding: '1.25rem 2rem',
@@ -149,107 +151,111 @@ export default function PublicDownload() {
             gap: '0.5rem',
             textDecoration: 'none',
             color: 'var(--text-primary)',
-            fontWeight: 700,
-            fontSize: '1.125rem',
           }}
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <span style={{ color: 'var(--accent)' }}>
+            <KeyIcon size={18} />
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontWeight: 700,
+              fontSize: '1.125rem',
+            }}
           >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            <circle cx="12" cy="16" r="1.5" />
-          </svg>
-          <span>Vault Share</span>
+            The Post Room
+          </span>
         </Link>
       </header>
 
-      {/* Main card */}
+      {/* Main note slip */}
       <main
         style={{
           flex: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem 1.5rem',
+          padding: '3rem 1.5rem',
         }}
       >
         <div
           style={{
-            maxWidth: '28rem',
+            maxWidth: '32rem',
             width: '100%',
             backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '2.5rem 2rem',
-            boxShadow: 'var(--shadow-raised)',
-            textAlign: 'center',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '2.5rem 2.25rem',
+            position: 'relative',
           }}
         >
           {loading ? (
-            <div>
+            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
               <Spinner />
-              <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-                Checking security key...
+              <p
+                style={{
+                  marginTop: '1rem',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Opening the vault dispatch...
               </p>
             </div>
           ) : errorStatus ? (
-            /* Friendly error messages for expired, used-up, revoked, or non-existent links */
+            /* Kindly stated status note */
             <div>
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  margin: '0 auto 1.25rem',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--status-expired-bg)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--status-expired-text)',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
                 }}
               >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+                <StatusStamp
+                  status={
+                    errorStatus === '410_revoked'
+                      ? 'revoked'
+                      : errorStatus === '410_exhausted' || errorStatus === '410_expired'
+                        ? 'expired'
+                        : 'exhausted'
+                  }
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="15" y1="9" x2="9" y2="15" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
+                  {errorStatus === '410_revoked'
+                    ? 'Revoked'
+                    : errorStatus === '410_exhausted'
+                      ? 'Used up'
+                      : errorStatus === '410_expired'
+                        ? 'Expired'
+                        : 'Unavailable'}
+                </StatusStamp>
               </div>
 
-              <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.75rem',
+                  lineHeight: 1.25,
+                  marginBottom: '0.75rem',
+                }}
+              >
                 {errorStatus === '410_revoked'
-                  ? 'Link Revoked'
+                  ? 'This key was revoked.'
                   : errorStatus === '410_exhausted'
-                    ? 'Download Limit Reached'
+                    ? 'This key has been used up.'
                     : errorStatus === '410_expired'
-                      ? 'Link Expired'
+                      ? 'This key ran out.'
                       : errorStatus === '429'
-                        ? 'Temporarily Locked'
-                        : 'File Not Available'}
+                        ? 'Temporarily locked.'
+                        : 'Key not found.'}
               </h1>
 
               <p
                 style={{
                   color: 'var(--text-secondary)',
-                  fontSize: '0.95rem',
+                  fontSize: '1rem',
                   lineHeight: 1.6,
                   marginBottom: '2rem',
                 }}
@@ -257,129 +263,154 @@ export default function PublicDownload() {
                 {errorMessage}
               </p>
 
-              <Link to="/">
-                <Button style={{ width: '100%' }}>Go to Home</Button>
-              </Link>
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                <Link to="/" style={{ textDecoration: 'none' }}>
+                  <Button variant="secondary" style={{ width: '100%' }}>
+                    Return to The Post Room
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : linkMeta?.isPasswordProtected && !isUnlocked ? (
-            /* Password unlock prompt */
+            /* Password unlock note */
             <div>
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  margin: '0 auto 1.25rem',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--accent-subtle)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '0.5rem',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--accent)',
+                  gap: '0.5rem',
                 }}
               >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                <LockIcon size={14} />
+                <span>Sealed Dispatch</span>
               </div>
 
-              <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Password Protected</h1>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.75rem',
+                  lineHeight: 1.25,
+                  marginBottom: '0.5rem',
+                }}
+              >
+                This file needs a password to open.
+              </h1>
+
               <p
                 style={{
                   color: 'var(--text-secondary)',
-                  fontSize: '0.875rem',
-                  marginBottom: '1.5rem',
+                  fontSize: '0.925rem',
+                  lineHeight: 1.6,
+                  marginBottom: '1.75rem',
                 }}
               >
-                The sender protected this file with a password. Enter it below to unlock access.
+                The sender protected this dispatch. Enter the secret word they provided to turn the
+                key.
               </p>
 
-              <form onSubmit={handleUnlock} style={{ textAlign: 'left' }}>
+              <form onSubmit={handleUnlock}>
                 <Field label="Password" htmlFor="unlockPassword" error={unlockError}>
                   <input
                     type="password"
                     id="unlockPassword"
                     required
-                    placeholder="Enter link password"
+                    placeholder="Enter key password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoFocus
                   />
                 </Field>
 
-                <div style={{ marginTop: '1.25rem' }}>
-                  <Button type="submit" disabled={isUnlocking} style={{ width: '100%' }}>
-                    {isUnlocking ? 'Unlocking...' : 'Unlock File'}
+                <div style={{ marginTop: '1.5rem' }}>
+                  <Button
+                    type="submit"
+                    disabled={isUnlocking}
+                    variant="primary"
+                    style={{ width: '100%' }}
+                  >
+                    {isUnlocking ? 'Verifying word...' : 'Turn Key & Unlock'}
                   </Button>
                 </div>
               </form>
             </div>
           ) : (
-            /* Unlocked or unprotected file ready for download */
+            /* Reassuring postal note: Ready for download */
             <div>
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  margin: '0 auto 1.25rem',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--status-active-bg)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--status-active-text)',
+                  gap: '0.5rem',
+                  marginBottom: '1rem',
                 }}
               >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+                <StatusStamp status="active">Active Key</StatusStamp>
               </div>
 
-              <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem', wordBreak: 'break-all' }}>
-                {fileMeta?.originalName || 'Ready for Download'}
+              <div
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.95rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '0.25rem',
+                }}
+              >
+                A document has been kept for you:
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '1.25rem',
+                  lineHeight: 1.35,
+                  wordBreak: 'break-all',
+                  marginBottom: '0.5rem',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {fileMeta?.originalName || 'Document'}
               </h1>
 
-              <p
+              <div
                 style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8125rem',
                   color: 'var(--text-secondary)',
-                  fontSize: '0.875rem',
-                  marginBottom: '1.75rem',
+                  marginBottom: '2rem',
                 }}
               >
                 {fileMeta
                   ? `${formatBytes(fileMeta.size)} • ${fileMeta.mimeType}`
-                  : 'Secure attachment'}
-              </p>
+                  : 'Encrypted document'}
+              </div>
 
-              <Button onClick={handleDownload} style={{ width: '100%', padding: '0.75rem' }}>
-                Download Document
+              <Button
+                variant="primary"
+                onClick={handleDownload}
+                style={{ width: '100%', minHeight: '48px', fontSize: '1rem' }}
+              >
+                Download File
               </Button>
 
-              <div style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Directly served from a secure encrypted vault.
-              </div>
+              <footer
+                style={{
+                  marginTop: '1.75rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid var(--border-subtle)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.5,
+                }}
+              >
+                Direct handoff from The Post Room. No cookies tracked.
+              </footer>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { filesApi } from '../api/files.js';
 import { linksApi } from '../api/links.js';
 import { getAccessToken } from '../api/client.js';
@@ -6,12 +6,13 @@ import { useToast } from '../features/toast/ToastContext.jsx';
 import Button from '../components/Button.jsx';
 import Field from '../components/Field.jsx';
 import Dialog from '../components/Dialog.jsx';
-import StatusPill from '../components/StatusPill.jsx';
+import StatusStamp from '../components/StatusPill.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import CopyField from '../components/CopyField.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Timeline from '../components/Timeline.jsx';
 import Navbar from '../components/Navbar.jsx';
+import { KeyIcon } from '../components/PostRoomIcons.jsx';
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B';
@@ -41,12 +42,21 @@ export default function Dashboard() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // In-place expanded file ID for ruled ledger row
+  const [expandedFileId, setExpandedFileId] = useState(null);
+  const [rowDetails, setRowDetails] = useState({
+    loading: false,
+    links: [],
+    logs: [],
+    viewTab: 'keys', // 'keys' | 'timeline' | 'raw'
+  });
+
   // Upload state
   const [showUpload, setShowUpload] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Dialogs
+  // Rename & Delete dialogs
   const [renameDialog, setRenameDialog] = useState({ open: false, file: null, newName: '' });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, file: null });
 
@@ -59,23 +69,7 @@ export default function Dashboard() {
     hasPassword: false,
     password: '',
     generatedLink: '',
-  });
-
-  // Links list modal
-  const [linksModal, setLinksModal] = useState({
-    open: false,
-    file: null,
-    links: [],
-    loading: false,
-  });
-
-  // Logs modal
-  const [logsModal, setLogsModal] = useState({
-    open: false,
-    file: null,
-    logs: [],
-    loading: false,
-    viewMode: 'timeline', // 'timeline' or 'table'
+    isCreating: false,
   });
 
   const fetchFiles = useCallback(async () => {
@@ -84,7 +78,7 @@ export default function Dashboard() {
       const data = await filesApi.list();
       setFiles(data.files || []);
     } catch (e) {
-      toast.error(e.message || 'Failed to load files');
+      toast.error(e.message || 'Could not retrieve your vault documents.');
     } finally {
       setLoading(false);
     }
@@ -93,6 +87,35 @@ export default function Dashboard() {
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
+
+  const loadRowDetails = async (fileId) => {
+    setRowDetails((prev) => ({ ...prev, loading: true }));
+    try {
+      const [linksRes, logsRes] = await Promise.allSettled([
+        linksApi.list({ fileId }),
+        filesApi.logs(fileId),
+      ]);
+
+      setRowDetails({
+        loading: false,
+        links: linksRes.status === 'fulfilled' ? linksRes.value.links || [] : [],
+        logs: logsRes.status === 'fulfilled' ? logsRes.value.logs || [] : [],
+        viewTab: 'keys',
+      });
+    } catch {
+      setRowDetails((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const toggleRowExpand = (file) => {
+    const fileId = file.id || file._id;
+    if (expandedFileId === fileId) {
+      setExpandedFileId(null);
+    } else {
+      setExpandedFileId(fileId);
+      loadRowDetails(fileId);
+    }
+  };
 
   const handleUpload = (e) => {
     const file = e.target.files[0];
@@ -122,12 +145,12 @@ export default function Dashboard() {
     xhr.onload = () => {
       setIsUploading(false);
       if (xhr.status === 201) {
-        toast.success(`"${file.name}" uploaded successfully`);
+        toast.success(`"${file.name}" safely kept in your vault.`);
         setShowUpload(false);
         setUploadProgress(0);
         fetchFiles();
       } else {
-        let msg = 'Upload failed';
+        let msg = 'File could not be kept';
         try {
           const body = JSON.parse(xhr.responseText);
           msg = body?.error?.message || msg;
@@ -140,7 +163,7 @@ export default function Dashboard() {
 
     xhr.onerror = () => {
       setIsUploading(false);
-      toast.error('Network error during file upload');
+      toast.error('Connection interrupted while placing file into vault.');
     };
 
     xhr.send(formData);
@@ -151,7 +174,7 @@ export default function Dashboard() {
     if (!newName.trim()) return;
     try {
       await filesApi.rename(file.id || file._id, newName.trim());
-      toast.success('File renamed');
+      toast.success('Document renamed in ledger.');
       fetchFiles();
     } catch (e) {
       toast.error(e.message || 'Rename failed');
@@ -164,16 +187,18 @@ export default function Dashboard() {
     const { file } = deleteDialog;
     try {
       await filesApi.delete(file.id || file._id);
-      toast.success('File and all its share links deleted');
+      toast.success('Document and its keys permanently retired.');
+      if (expandedFileId === (file.id || file._id)) {
+        setExpandedFileId(null);
+      }
       fetchFiles();
     } catch (e) {
-      toast.error(e.message || 'Delete failed');
+      toast.error(e.message || 'Deletion failed');
     } finally {
       setDeleteDialog({ open: false, file: null });
     }
   };
 
-  // Plain-language summary generator for share dialog
   const getShareSummary = () => {
     const parts = [];
     if (shareDialog.expiresInDays === '0') {
@@ -193,7 +218,7 @@ export default function Dashboard() {
     }
 
     if (shareDialog.hasPassword) {
-      parts.push('protected with password');
+      parts.push('locked with password');
     } else {
       parts.push('no password required');
     }
@@ -202,6 +227,7 @@ export default function Dashboard() {
   };
 
   const handleCreateShareLink = async () => {
+    setShareDialog((prev) => ({ ...prev, isCreating: true }));
     try {
       const payload = {};
       if (shareDialog.expiresInDays !== '0') {
@@ -216,53 +242,33 @@ export default function Dashboard() {
         payload.password = shareDialog.password.trim();
       }
 
-      const res = await linksApi.create(shareDialog.file.id || shareDialog.file._id, payload);
+      const fileId = shareDialog.file.id || shareDialog.file._id;
+      const res = await linksApi.create(fileId, payload);
       const publicUrl = `${window.location.origin}/share/${res.token}`;
-      setShareDialog((prev) => ({ ...prev, generatedLink: publicUrl }));
-      toast.success('Share link generated');
-    } catch (err) {
-      toast.error(err.message || 'Could not create share link');
-    }
-  };
-
-  const openLinksModal = async (file) => {
-    setLinksModal({ open: true, file, links: [], loading: true });
-    try {
-      const data = await linksApi.list({ fileId: file.id || file._id });
-      setLinksModal({ open: true, file, links: data.links || [], loading: false });
-    } catch (err) {
-      toast.error(err.message || 'Failed to load links');
-      setLinksModal((prev) => ({ ...prev, loading: false }));
-    }
-  };
-
-  const handleRevokeLink = async (linkId) => {
-    try {
-      await linksApi.revoke(linkId);
-      toast.success('Share link revoked');
-      if (linksModal.file) {
-        const data = await linksApi.list({ fileId: linksModal.file.id || linksModal.file._id });
-        setLinksModal((prev) => ({ ...prev, links: data.links || [] }));
+      setShareDialog((prev) => ({
+        ...prev,
+        generatedLink: publicUrl,
+        isCreating: false,
+      }));
+      toast.success('Key created and sealed.');
+      if (expandedFileId === fileId) {
+        loadRowDetails(fileId);
       }
     } catch (err) {
-      toast.error(err.message || 'Failed to revoke link');
+      setShareDialog((prev) => ({ ...prev, isCreating: false }));
+      toast.error(err.message || 'Could not seal share key');
     }
   };
 
-  const openLogsModal = async (file) => {
-    setLogsModal({ open: true, file, logs: [], loading: true, viewMode: 'timeline' });
+  const handleRevokeKey = async (linkId, fileId) => {
     try {
-      const data = await filesApi.logs(file.id || file._id);
-      setLogsModal({
-        open: true,
-        file,
-        logs: data.logs || [],
-        loading: false,
-        viewMode: 'timeline',
-      });
+      await linksApi.revoke(linkId);
+      toast.success('Key revoked permanently.');
+      if (fileId) {
+        loadRowDetails(fileId);
+      }
     } catch (err) {
-      toast.error(err.message || 'Failed to load access logs');
-      setLogsModal((prev) => ({ ...prev, loading: false }));
+      toast.error(err.message || 'Failed to revoke key');
     }
   };
 
@@ -273,181 +279,518 @@ export default function Dashboard() {
       <main
         style={{
           flex: 1,
-          maxWidth: '64rem',
+          maxWidth: '68rem',
           margin: '0 auto',
           width: '100%',
-          padding: '2rem 1.5rem',
+          padding: '2.5rem 1.5rem',
         }}
       >
         <header
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'baseline',
             justifyContent: 'space-between',
             marginBottom: '2rem',
+            borderBottom: '1px solid var(--border-subtle)',
+            paddingBottom: '1.25rem',
             flexWrap: 'wrap',
             gap: '1rem',
           }}
         >
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Your Vault</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-              Files you keep safe, ready to share securely whenever you choose.
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.75rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--text-secondary)',
+                marginBottom: '0.25rem',
+              }}
+            >
+              Dispatch Ledger
+            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '2.25rem',
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              Your Vault
+            </h1>
+            <p
+              style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.25rem' }}
+            >
+              Files you keep safe, ready to issue keys whenever you choose.
             </p>
           </div>
 
-          <Button onClick={() => setShowUpload(true)}>Upload File</Button>
+          <Button variant="primary" onClick={() => setShowUpload(true)}>
+            Keep a File
+          </Button>
         </header>
 
         {loading ? (
           <div style={{ padding: '4rem 0', textAlign: 'center' }}>
             <Spinner />
             <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-              Loading your vault...
+              Consulting the ledger...
             </p>
           </div>
         ) : files.length === 0 ? (
           <EmptyState
-            title="Your vault is empty"
-            description="Upload documents, archives, or images. You can generate self-expiring, password-protected links anytime."
-            action={<Button onClick={() => setShowUpload(true)}>Upload Your First File</Button>}
+            title="Nothing here yet."
+            description="Drop a file to start your vault. You can issue self-expiring, password-protected keys anytime."
+            action={
+              <Button variant="primary" onClick={() => setShowUpload(true)}>
+                Keep Your First File
+              </Button>
+            }
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {files.map((file) => (
-              <article
-                key={file.id || file._id}
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '1.25rem 1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '1rem',
-                  boxShadow: 'var(--shadow-warm)',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: '240px' }}>
-                  <h2
-                    style={{
-                      fontSize: '1.125rem',
-                      marginBottom: '0.25rem',
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {file.originalName}
-                  </h2>
+          /* Ruled Ledger Table */
+          <div
+            style={{
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: 'var(--bg-surface)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Ledger Header */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 2fr) 110px 140px minmax(0, 2.5fr)',
+                padding: '0.75rem 1.25rem',
+                borderBottom: '1px solid var(--border-strong)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--bg-primary)',
+              }}
+              className="ledger-header"
+            >
+              <span>Document</span>
+              <span>Size</span>
+              <span>Kept Since</span>
+              <span style={{ textAlign: 'right' }}>Actions & Ledger</span>
+            </div>
+
+            {/* Ruled rows */}
+            {files.map((file, idx) => {
+              const fileId = file.id || file._id;
+              const isExpanded = expandedFileId === fileId;
+
+              return (
+                <div
+                  key={fileId}
+                  style={{
+                    borderBottom:
+                      idx === files.length - 1 && !isExpanded
+                        ? 'none'
+                        : '1px solid var(--border-subtle)',
+                    transition: 'background-color var(--transition-fast)',
+                    backgroundColor: isExpanded ? 'var(--bg-surface-hover)' : 'transparent',
+                  }}
+                >
+                  {/* Summary row */}
                   <div
                     style={{
-                      display: 'flex',
-                      gap: '1rem',
-                      fontSize: '0.8125rem',
-                      color: 'var(--text-secondary)',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>{formatBytes(file.size)}</span>
-                    <span>•</span>
-                    <span>{file.mimeType}</span>
-                    <span>•</span>
-                    <span>Uploaded {new Date(file.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}
-                >
-                  {/* Primary action: Share */}
-                  <Button
-                    onClick={() =>
-                      setShareDialog({
-                        open: true,
-                        file,
-                        expiresInDays: '7',
-                        maxDownloads: '5',
-                        hasPassword: false,
-                        password: '',
-                        generatedLink: '',
-                      })
-                    }
-                  >
-                    Share
-                  </Button>
-
-                  {/* Direct owner download */}
-                  <a
-                    href={`${import.meta.env.VITE_API_URL ?? ''}/api/v1/files/${file.id || file._id}/download`}
-                    style={{
-                      display: 'inline-flex',
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 2fr) 110px 140px minmax(0, 2.5fr)',
+                      padding: '1rem 1.25rem',
                       alignItems: 'center',
-                      padding: 'var(--space-2) var(--space-4)',
-                      fontSize: 'var(--text-sm)',
-                      fontWeight: 600,
-                      color: 'var(--text-primary)',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      textDecoration: 'none',
+                      gap: '0.5rem',
                     }}
+                    className="ledger-row"
                   >
-                    Download
-                  </a>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.925rem',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {file.originalName}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.8rem',
+                          color: 'var(--text-secondary)',
+                          marginTop: '0.2rem',
+                        }}
+                      >
+                        {file.mimeType}
+                      </div>
+                    </div>
 
-                  {/* View links */}
-                  <Button
-                    onClick={() => openLinksModal(file)}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    Links
-                  </Button>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.8125rem',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {formatBytes(file.size)}
+                    </div>
 
-                  {/* Access history */}
-                  <Button
-                    onClick={() => openLogsModal(file)}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    History
-                  </Button>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.8125rem',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {new Date(file.createdAt).toLocaleDateString()}
+                    </div>
 
-                  {/* Rename */}
-                  <Button
-                    onClick={() =>
-                      setRenameDialog({ open: true, file, newName: file.originalName })
-                    }
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    Rename
-                  </Button>
+                    {/* Action buttons */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: '0.5rem',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          setShareDialog({
+                            open: true,
+                            file,
+                            expiresInDays: '7',
+                            maxDownloads: '5',
+                            hasPassword: false,
+                            password: '',
+                            generatedLink: '',
+                            isCreating: false,
+                          })
+                        }
+                        style={{ minHeight: '36px', padding: '0 0.75rem', fontSize: '0.8125rem' }}
+                      >
+                        Hand Out Key
+                      </Button>
 
-                  {/* Delete */}
-                  <Button
-                    onClick={() => setDeleteDialog({ open: true, file })}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--color-danger)',
-                    }}
-                  >
-                    Delete
-                  </Button>
+                      <a
+                        href={`${import.meta.env.VITE_API_URL ?? ''}/api/v1/files/${fileId}/download`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          minHeight: '36px',
+                          padding: '0 0.75rem',
+                          fontSize: '0.8125rem',
+                          fontFamily: 'var(--font-sans)',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          backgroundColor: 'var(--bg-surface)',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        Download
+                      </a>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() => toggleRowExpand(file)}
+                        style={{
+                          minHeight: '36px',
+                          padding: '0 0.75rem',
+                          fontSize: '0.8125rem',
+                          borderColor: isExpanded ? 'var(--accent)' : 'var(--border-subtle)',
+                        }}
+                      >
+                        {isExpanded ? 'Close Entry' : 'Open Ledger'}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          setRenameDialog({ open: true, file, newName: file.originalName })
+                        }
+                        style={{ minHeight: '36px', padding: '0 0.5rem', fontSize: '0.8125rem' }}
+                      >
+                        Rename
+                      </Button>
+
+                      <Button
+                        variant="danger"
+                        onClick={() => setDeleteDialog({ open: true, file })}
+                        style={{ minHeight: '36px', padding: '0 0.5rem', fontSize: '0.8125rem' }}
+                      >
+                        Retire
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Expanded In-Place Drawer */}
+                  {isExpanded && (
+                    <div
+                      style={{
+                        padding: '1.5rem',
+                        borderTop: '1px dashed var(--border-strong)',
+                        backgroundColor: 'var(--bg-primary)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '1rem',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          paddingBottom: '0.75rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setRowDetails((prev) => ({ ...prev, viewTab: 'keys' }))}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              fontFamily: 'var(--font-sans)',
+                              fontSize: '0.875rem',
+                              fontWeight: 600,
+                              color:
+                                rowDetails.viewTab === 'keys'
+                                  ? 'var(--accent)'
+                                  : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              borderBottom:
+                                rowDetails.viewTab === 'keys'
+                                  ? '2px solid var(--accent)'
+                                  : '2px solid transparent',
+                              paddingBottom: '0.25rem',
+                            }}
+                          >
+                            Issued Keys ({rowDetails.links.length})
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRowDetails((prev) => ({ ...prev, viewTab: 'timeline' }))
+                            }
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              fontFamily: 'var(--font-sans)',
+                              fontSize: '0.875rem',
+                              fontWeight: 600,
+                              color:
+                                rowDetails.viewTab === 'timeline'
+                                  ? 'var(--accent)'
+                                  : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              borderBottom:
+                                rowDetails.viewTab === 'timeline'
+                                  ? '2px solid var(--accent)'
+                                  : '2px solid transparent',
+                              paddingBottom: '0.25rem',
+                            }}
+                          >
+                            Access Story ({rowDetails.logs.length})
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRowDetails((prev) => ({ ...prev, viewTab: 'raw' }))}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              fontFamily: 'var(--font-sans)',
+                              fontSize: '0.875rem',
+                              fontWeight: 600,
+                              color:
+                                rowDetails.viewTab === 'raw'
+                                  ? 'var(--accent)'
+                                  : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              borderBottom:
+                                rowDetails.viewTab === 'raw'
+                                  ? '2px solid var(--accent)'
+                                  : '2px solid transparent',
+                              paddingBottom: '0.25rem',
+                            }}
+                          >
+                            Raw Log
+                          </button>
+                        </div>
+
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          Document ID: {fileId}
+                        </span>
+                      </div>
+
+                      {rowDetails.loading ? (
+                        <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+                          <Spinner />
+                        </div>
+                      ) : rowDetails.viewTab === 'keys' ? (
+                        /* Keys Tab */
+                        rowDetails.links.length === 0 ? (
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                            No keys have been issued for this document yet. Click &ldquo;Hand Out
+                            Key&rdquo; to create one.
+                          </p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {rowDetails.links.map((lnk) => {
+                              const { status, text } = computeLinkStatus(lnk);
+                              return (
+                                <div
+                                  key={lnk.id || lnk._id}
+                                  style={{
+                                    border: '1px solid var(--border-subtle)',
+                                    borderRadius: 'var(--radius-xs)',
+                                    padding: '0.75rem 1rem',
+                                    backgroundColor: 'var(--bg-surface)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: '0.75rem',
+                                  }}
+                                >
+                                  <div>
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        marginBottom: '0.25rem',
+                                      }}
+                                    >
+                                      <StatusStamp status={status}>{text}</StatusStamp>
+                                      <span
+                                        style={{
+                                          fontFamily: 'var(--font-mono)',
+                                          fontSize: '0.75rem',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        Key #{String(lnk.id || lnk._id).slice(-6)}
+                                      </span>
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: '0.8125rem',
+                                        color: 'var(--text-secondary)',
+                                      }}
+                                    >
+                                      {lnk.maxDownloads
+                                        ? `${lnk.downloadCount} of ${lnk.maxDownloads} downloads used`
+                                        : `${lnk.downloadCount} downloads (unlimited)`}
+                                      {' • '}
+                                      {lnk.expiresAt
+                                        ? `Expires ${new Date(lnk.expiresAt).toLocaleDateString()}`
+                                        : 'Never expires'}
+                                      {lnk.isPasswordProtected && ' • Password locked'}
+                                    </div>
+                                  </div>
+
+                                  {!lnk.isRevoked && (
+                                    <Button
+                                      variant="danger"
+                                      onClick={() => handleRevokeKey(lnk.id || lnk._id, fileId)}
+                                      style={{
+                                        minHeight: '32px',
+                                        padding: '0 0.5rem',
+                                        fontSize: '0.75rem',
+                                      }}
+                                    >
+                                      Revoke Key
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )
+                      ) : rowDetails.viewTab === 'timeline' ? (
+                        /* Human Sentences Timeline */
+                        <Timeline items={rowDetails.logs} />
+                      ) : (
+                        /* Raw Log Tab */
+                        <div style={{ overflowX: 'auto' }}>
+                          <table
+                            style={{
+                              width: '100%',
+                              fontSize: '0.8125rem',
+                              borderCollapse: 'collapse',
+                              fontFamily: 'var(--font-mono)',
+                            }}
+                          >
+                            <thead>
+                              <tr
+                                style={{
+                                  borderBottom: '1px solid var(--border-strong)',
+                                  textAlign: 'left',
+                                }}
+                              >
+                                <th style={{ padding: '0.5rem' }}>Time</th>
+                                <th style={{ padding: '0.5rem' }}>Outcome</th>
+                                <th style={{ padding: '0.5rem' }}>IP Address</th>
+                                <th style={{ padding: '0.5rem' }}>User Agent</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rowDetails.logs.map((log, lIdx) => (
+                                <tr
+                                  key={log._id || log.id || lIdx}
+                                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                                >
+                                  <td style={{ padding: '0.5rem' }}>
+                                    {new Date(log.timestamp).toLocaleString()}
+                                  </td>
+                                  <td style={{ padding: '0.5rem' }}>
+                                    <StatusStamp
+                                      status={log.outcome === 'success' ? 'active' : 'revoked'}
+                                    >
+                                      {log.outcome}
+                                    </StatusStamp>
+                                  </td>
+                                  <td style={{ padding: '0.5rem' }}>{log.ip}</td>
+                                  <td
+                                    style={{
+                                      padding: '0.5rem',
+                                      maxWidth: '240px',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {log.userAgent || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </article>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -455,14 +798,14 @@ export default function Dashboard() {
       {/* Upload Dialog */}
       <Dialog
         open={showUpload}
-        title="Upload Document"
+        title="Keep a Document"
         onClose={() => {
           if (!isUploading) setShowUpload(false);
         }}
       >
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          Select a file to securely store. Allowed types: PDF, PNG, JPEG, GIF, WEBP, ZIP, TXT.
-          Maximum 25MB.
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+          Choose a file to deposit into your private post room vault. Accepted: PDF, PNG, JPEG, GIF,
+          WEBP, ZIP, TXT. Up to 25MB.
         </p>
         <input
           type="file"
@@ -470,29 +813,31 @@ export default function Dashboard() {
           onChange={handleUpload}
           style={{
             width: '100%',
-            padding: '0.75rem',
+            padding: '1rem',
             border: '1px dashed var(--border-strong)',
             borderRadius: 'var(--radius-sm)',
+            backgroundColor: 'var(--bg-primary)',
           }}
         />
         {isUploading && (
-          <div style={{ marginTop: '1rem' }}>
+          <div style={{ marginTop: '1.25rem' }}>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 fontSize: '0.8125rem',
-                marginBottom: '0.25rem',
+                marginBottom: '0.35rem',
+                fontFamily: 'var(--font-mono)',
               }}
             >
-              <span>Uploading and verifying magic bytes...</span>
+              <span>Checking magic bytes and storing securely...</span>
               <span>{uploadProgress}%</span>
             </div>
             <div
               style={{
-                height: '6px',
-                backgroundColor: 'var(--bg-surface-hover)',
-                borderRadius: '3px',
+                height: '4px',
+                backgroundColor: 'var(--border-subtle)',
+                borderRadius: '2px',
                 overflow: 'hidden',
               }}
             >
@@ -501,7 +846,7 @@ export default function Dashboard() {
                   width: `${uploadProgress}%`,
                   height: '100%',
                   backgroundColor: 'var(--accent)',
-                  transition: 'width 200ms ease',
+                  transition: 'width 150ms ease',
                 }}
               />
             </div>
@@ -515,9 +860,9 @@ export default function Dashboard() {
         title="Rename Document"
         onClose={() => setRenameDialog({ open: false, file: null, newName: '' })}
         onConfirm={confirmRename}
-        confirmLabel="Save Name"
+        confirmLabel="Save"
       >
-        <Field label="Document Name" htmlFor="renameInput">
+        <Field label="Document Title in Ledger" htmlFor="renameInput">
           <input
             id="renameInput"
             value={renameDialog.newName}
@@ -530,93 +875,82 @@ export default function Dashboard() {
       {/* Delete Consequence Confirm Dialog */}
       <Dialog
         open={deleteDialog.open}
-        title="Confirm Permanent Deletion"
+        title="Retire Document Permanently"
         onClose={() => setDeleteDialog({ open: false, file: null })}
         onConfirm={confirmDelete}
-        confirmLabel="Permanently Delete"
+        confirmLabel="Retire Document"
+        isDestructive
       >
-        <p style={{ color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
-          Are you sure you want to delete <strong>{deleteDialog.file?.originalName}</strong>?
+        <p style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>
+          Are you sure you want to retire <strong>{deleteDialog.file?.originalName}</strong>?
         </p>
         <div
           style={{
-            backgroundColor: 'var(--status-expired-bg)',
-            color: 'var(--status-expired-text)',
-            padding: '0.75rem 1rem',
+            backgroundColor: 'var(--status-revoked-bg)',
+            color: 'var(--status-revoked-text)',
+            border: '1px solid var(--status-revoked-border)',
+            padding: '0.875rem 1rem',
             borderRadius: 'var(--radius-sm)',
             fontSize: '0.875rem',
+            lineHeight: 1.5,
           }}
         >
-          <strong>Warning:</strong> This permanently erases the file from disk storage and
-          immediately revokes all public share links associated with it. This action cannot be
-          undone.
+          This permanently erases the document from vault storage. All keys issued for this document
+          will immediately shut and cannot be reopened.
         </div>
       </Dialog>
 
-      {/* Share Dialog with Progressive Disclosure */}
+      {/* Share Dialog */}
       <Dialog
         open={shareDialog.open}
-        title={`Share "${shareDialog.file?.originalName}"`}
+        title={`Hand Out Key for "${shareDialog.file?.originalName}"`}
         onClose={() => setShareDialog((prev) => ({ ...prev, open: false }))}
       >
         {!shareDialog.generatedLink ? (
           <div>
             <p
               style={{
-                fontSize: '0.875rem',
+                fontSize: '0.9rem',
                 color: 'var(--text-secondary)',
                 marginBottom: '1.25rem',
               }}
             >
-              Create a cryptographic key to hand to someone. You can revoke it anytime.
+              Set the rules for this key. When limits are reached, the lock clicks shut.
             </p>
 
-            {/* Expiration option */}
-            <Field label="Link Expiration" htmlFor="expiresInDays">
+            <Field label="Key Expiry" htmlFor="expiresInDays">
               <select
                 id="expiresInDays"
                 value={shareDialog.expiresInDays}
                 onChange={(e) =>
                   setShareDialog((prev) => ({ ...prev, expiresInDays: e.target.value }))
                 }
-                style={{
-                  width: '100%',
-                  padding: 'var(--space-2) var(--space-3)',
-                  borderRadius: 'var(--radius-sm)',
-                }}
               >
-                <option value="1">1 day</option>
-                <option value="3">3 days</option>
-                <option value="7">7 days</option>
-                <option value="30">30 days</option>
-                <option value="0">Never expires (count only)</option>
+                <option value="1">Runs out in 1 day</option>
+                <option value="3">Runs out in 3 days</option>
+                <option value="7">Runs out in 7 days</option>
+                <option value="30">Runs out in 30 days</option>
+                <option value="0">Never expires by time</option>
               </select>
             </Field>
 
-            {/* Download limit option */}
-            <Field label="Max Downloads Allowed" htmlFor="maxDownloads">
+            <Field label="Download Allowance" htmlFor="maxDownloads">
               <select
                 id="maxDownloads"
                 value={shareDialog.maxDownloads}
                 onChange={(e) =>
                   setShareDialog((prev) => ({ ...prev, maxDownloads: e.target.value }))
                 }
-                style={{
-                  width: '100%',
-                  padding: 'var(--space-2) var(--space-3)',
-                  borderRadius: 'var(--radius-sm)',
-                }}
               >
-                <option value="1">Single use (1 download)</option>
-                <option value="3">3 downloads</option>
-                <option value="5">5 downloads</option>
-                <option value="10">10 downloads</option>
+                <option value="1">Single handoff (1 download)</option>
+                <option value="3">Up to 3 downloads</option>
+                <option value="5">Up to 5 downloads</option>
+                <option value="10">Up to 10 downloads</option>
                 <option value="0">Unlimited downloads</option>
               </select>
             </Field>
 
-            {/* Progressive disclosure: password toggle */}
-            <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+            <div style={{ marginTop: '1rem', marginBottom: '1.25rem' }}>
               <label
                 style={{
                   display: 'flex',
@@ -624,6 +958,7 @@ export default function Dashboard() {
                   gap: '0.5rem',
                   cursor: 'pointer',
                   fontWeight: 600,
+                  fontSize: '0.925rem',
                 }}
               >
                 <input
@@ -633,12 +968,12 @@ export default function Dashboard() {
                     setShareDialog((prev) => ({ ...prev, hasPassword: e.target.checked }))
                   }
                 />
-                <span>Protect with a password</span>
+                <span>Lock with a password</span>
               </label>
 
               {shareDialog.hasPassword && (
                 <div style={{ marginTop: '0.75rem' }}>
-                  <Field label="Access Password" htmlFor="sharePassword">
+                  <Field label="Key Password" htmlFor="sharePassword">
                     <input
                       type="password"
                       id="sharePassword"
@@ -654,24 +989,28 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Plain language summary */}
             <div
               style={{
-                backgroundColor: 'var(--bg-surface-hover)',
+                backgroundColor: 'var(--bg-primary)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.75rem 1rem',
                 fontSize: '0.875rem',
                 color: 'var(--text-primary)',
-                marginTop: '1.25rem',
                 marginBottom: '1.5rem',
               }}
             >
               <strong>Summary:</strong> {getShareSummary()}
             </div>
 
-            <Button onClick={handleCreateShareLink} style={{ width: '100%' }}>
-              Generate Share Key
+            <Button
+              variant="primary"
+              onClick={handleCreateShareLink}
+              disabled={shareDialog.isCreating}
+              style={{ width: '100%' }}
+            >
+              <KeyIcon size={16} />
+              <span>{shareDialog.isCreating ? 'Sealing key...' : 'Seal & Issue Key'}</span>
             </Button>
           </div>
         ) : (
@@ -680,25 +1019,26 @@ export default function Dashboard() {
               style={{
                 backgroundColor: 'var(--status-active-bg)',
                 color: 'var(--status-active-text)',
-                padding: '0.75rem 1rem',
+                border: '1px solid var(--status-active-border)',
+                padding: '0.875rem 1rem',
                 borderRadius: 'var(--radius-sm)',
-                marginBottom: '1rem',
+                marginBottom: '1.25rem',
                 fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
               }}
             >
-              Key generated! Anyone with this link can download the file according to your rules.
+              <KeyIcon size={18} />
+              <span>Key issued and ready to hand to someone.</span>
             </div>
 
             <CopyField label="Public Share Link" value={shareDialog.generatedLink} />
 
             <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
               <Button
+                variant="secondary"
                 onClick={() => setShareDialog((prev) => ({ ...prev, open: false }))}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                }}
               >
                 Done
               </Button>
@@ -707,164 +1047,17 @@ export default function Dashboard() {
         )}
       </Dialog>
 
-      {/* Existing Links Modal */}
-      <Dialog
-        open={linksModal.open}
-        title={`Active Links for "${linksModal.file?.originalName}"`}
-        onClose={() => setLinksModal((prev) => ({ ...prev, open: false }))}
-      >
-        {linksModal.loading ? (
-          <Spinner />
-        ) : linksModal.links.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>
-            No share links generated yet for this file.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {linksModal.links.map((lnk) => {
-              const { status, text } = computeLinkStatus(lnk);
-              return (
-                <div
-                  key={lnk.id || lnk._id}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '0.75rem 1rem',
-                    backgroundColor: 'var(--bg-surface-hover)',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    <StatusPill status={status}>{text}</StatusPill>
-                    {!lnk.isRevoked && (
-                      <Button
-                        onClick={() => handleRevokeLink(lnk.id || lnk._id)}
-                        style={{
-                          padding: '0.2rem 0.5rem',
-                          fontSize: '0.75rem',
-                          backgroundColor: 'var(--color-danger)',
-                        }}
-                      >
-                        Revoke Now
-                      </Button>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                    <span>
-                      Downloads: {lnk.downloadCount} / {lnk.maxDownloads || '∞'}
-                    </span>
-                    <span style={{ margin: '0 0.5rem' }}>•</span>
-                    <span>
-                      Expires: {lnk.expiresAt ? new Date(lnk.expiresAt).toLocaleString() : 'Never'}
-                    </span>
-                    <span style={{ margin: '0 0.5rem' }}>•</span>
-                    <span>{lnk.isPasswordProtected ? 'Password protected' : 'No password'}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Dialog>
-
-      {/* Access History Logs Modal */}
-      <Dialog
-        open={logsModal.open}
-        title={`Access History for "${logsModal.file?.originalName}"`}
-        onClose={() => setLogsModal((prev) => ({ ...prev, open: false }))}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-          }}
-        >
-          <Button
-            onClick={() => setLogsModal((prev) => ({ ...prev, viewMode: 'timeline' }))}
-            style={{
-              padding: '0.25rem 0.5rem',
-              fontSize: '0.75rem',
-              backgroundColor: logsModal.viewMode === 'timeline' ? 'var(--accent)' : 'transparent',
-              color: logsModal.viewMode === 'timeline' ? '#fff' : 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            Timeline View
-          </Button>
-          <Button
-            onClick={() => setLogsModal((prev) => ({ ...prev, viewMode: 'table' }))}
-            style={{
-              padding: '0.25rem 0.5rem',
-              fontSize: '0.75rem',
-              backgroundColor: logsModal.viewMode === 'table' ? 'var(--accent)' : 'transparent',
-              color: logsModal.viewMode === 'table' ? '#fff' : 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            Raw Table
-          </Button>
-        </div>
-
-        {logsModal.loading ? (
-          <Spinner />
-        ) : logsModal.logs.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>No access attempts recorded yet.</p>
-        ) : logsModal.viewMode === 'timeline' ? (
-          <Timeline
-            items={logsModal.logs.map((log) => ({
-              timestamp: log.timestamp,
-              label: `Outcome: ${log.outcome}`,
-              details: `IP: ${log.ip} • Browser: ${log.userAgent || 'Unknown'}`,
-            }))}
-          />
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-strong)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.5rem' }}>Time</th>
-                  <th style={{ padding: '0.5rem' }}>Outcome</th>
-                  <th style={{ padding: '0.5rem' }}>IP Address</th>
-                  <th style={{ padding: '0.5rem' }}>User Agent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logsModal.logs.map((log, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '0.5rem' }}>
-                      {new Date(log.timestamp).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <StatusPill status={log.outcome === 'success' ? 'active' : 'expired'}>
-                        {log.outcome}
-                      </StatusPill>
-                    </td>
-                    <td style={{ padding: '0.5rem' }}>{log.ip}</td>
-                    <td
-                      style={{
-                        padding: '0.5rem',
-                        maxWidth: '180px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {log.userAgent || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Dialog>
+      <style>{`
+        @media (max-width: 820px) {
+          .ledger-header {
+            display: none !important;
+          }
+          .ledger-row {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../api/admin.js';
 import { useToast } from '../features/toast/ToastContext.jsx';
 import Button from '../components/Button.jsx';
 import Dialog from '../components/Dialog.jsx';
-import StatusPill from '../components/StatusPill.jsx';
+import StatusStamp from '../components/StatusPill.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Navbar from '../components/Navbar.jsx';
 
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       const data = await adminApi.listUsers();
       setUsers(data.users || []);
     } catch (err) {
-      toast.error(err.message || 'Failed to load users');
+      toast.error(err.message || 'Failed to consult postmaster user register.');
     } finally {
       setLoadingUsers(false);
     }
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
       const data = await adminApi.listFiles();
       setFiles(data.files || []);
     } catch (err) {
-      toast.error(err.message || 'Failed to load files');
+      toast.error(err.message || 'Failed to consult postmaster vault records.');
     } finally {
       setLoadingFiles(false);
     }
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       const data = await adminApi.listLogs();
       setLogs(data.logs || []);
     } catch (err) {
-      toast.error(err.message || 'Failed to load logs');
+      toast.error(err.message || 'Failed to inspect global dispatch ledger.');
     } finally {
       setLoadingLogs(false);
     }
@@ -83,10 +83,10 @@ export default function AdminDashboard() {
     const { user, willDisable } = userConfirmDialog;
     try {
       await adminApi.setUserStatus(user.id || user._id, willDisable);
-      toast.success(`User ${user.email} ${willDisable ? 'disabled' : 'enabled'}`);
+      toast.success(`Account for ${user.email} ${willDisable ? 'disabled' : 're-enabled'}.`);
       fetchUsers();
     } catch (err) {
-      toast.error(err.message || 'Action failed');
+      toast.error(err.message || 'Action could not be executed.');
     } finally {
       setUserConfirmDialog({ open: false, user: null, willDisable: false });
     }
@@ -96,10 +96,10 @@ export default function AdminDashboard() {
     const { file } = deleteFileDialog;
     try {
       await adminApi.deleteFile(file.id || file._id);
-      toast.success(`File "${file.originalName}" permanently deleted from vault`);
+      toast.success(`Document "${file.originalName}" permanently purged from the vault.`);
       fetchFiles();
     } catch (err) {
-      toast.error(err.message || 'Failed to delete file');
+      toast.error(err.message || 'Purge failed.');
     } finally {
       setDeleteFileDialog({ open: false, file: null });
     }
@@ -112,16 +112,43 @@ export default function AdminDashboard() {
       <main
         style={{
           flex: 1,
-          maxWidth: '64rem',
+          maxWidth: '68rem',
           margin: '0 auto',
           width: '100%',
-          padding: '2rem 1.5rem',
+          padding: '2.5rem 1.5rem',
         }}
       >
-        <header style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Administrator Console</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-            System-wide user governance, global storage inspection, and audit event logs.
+        <header
+          style={{
+            marginBottom: '2rem',
+            borderBottom: '1px solid var(--border-subtle)',
+            paddingBottom: '1.25rem',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--accent)',
+              marginBottom: '0.25rem',
+            }}
+          >
+            Postmaster Audit Console
+          </div>
+          <h1
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: '2.25rem',
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >
+            System Registry & Audit
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
+            System-wide vault supervision, account management, and immutable dispatch logs.
           </p>
         </header>
 
@@ -129,9 +156,9 @@ export default function AdminDashboard() {
         <div
           style={{
             display: 'flex',
-            gap: '0.5rem',
+            gap: '0.75rem',
             borderBottom: '1px solid var(--border-subtle)',
-            marginBottom: '1.5rem',
+            marginBottom: '1.75rem',
           }}
         >
           <button
@@ -140,6 +167,7 @@ export default function AdminDashboard() {
             style={{
               padding: '0.5rem 1rem',
               fontWeight: 600,
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.875rem',
               backgroundColor: 'transparent',
               border: 'none',
@@ -147,9 +175,10 @@ export default function AdminDashboard() {
                 activeTab === 'users' ? '2px solid var(--accent)' : '2px solid transparent',
               color: activeTab === 'users' ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
+              minHeight: '44px',
             }}
           >
-            Users ({users.length})
+            Registered Vaults ({users.length})
           </button>
           <button
             type="button"
@@ -157,6 +186,7 @@ export default function AdminDashboard() {
             style={{
               padding: '0.5rem 1rem',
               fontWeight: 600,
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.875rem',
               backgroundColor: 'transparent',
               border: 'none',
@@ -164,9 +194,10 @@ export default function AdminDashboard() {
                 activeTab === 'files' ? '2px solid var(--accent)' : '2px solid transparent',
               color: activeTab === 'files' ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
+              minHeight: '44px',
             }}
           >
-            All Files ({files.length})
+            Kept Documents ({files.length})
           </button>
           <button
             type="button"
@@ -174,6 +205,7 @@ export default function AdminDashboard() {
             style={{
               padding: '0.5rem 1rem',
               fontWeight: 600,
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.875rem',
               backgroundColor: 'transparent',
               border: 'none',
@@ -181,9 +213,10 @@ export default function AdminDashboard() {
                 activeTab === 'logs' ? '2px solid var(--accent)' : '2px solid transparent',
               color: activeTab === 'logs' ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
+              minHeight: '44px',
             }}
           >
-            Global Audit Logs ({logs.length})
+            Dispatch Ledger ({logs.length})
           </button>
         </div>
 
@@ -191,13 +224,15 @@ export default function AdminDashboard() {
         {activeTab === 'users' && (
           <div>
             {loadingUsers ? (
-              <Spinner />
+              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                <Spinner />
+              </div>
             ) : (
               <div
                 style={{
                   overflowX: 'auto',
                   backgroundColor: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border-subtle)',
                 }}
               >
@@ -205,16 +240,21 @@ export default function AdminDashboard() {
                   <thead>
                     <tr
                       style={{
-                        borderBottom: '1px solid var(--border-subtle)',
+                        borderBottom: '1px solid var(--border-strong)',
                         textAlign: 'left',
-                        backgroundColor: 'var(--bg-surface-hover)',
+                        backgroundColor: 'var(--bg-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--text-secondary)',
                       }}
                     >
-                      <th style={{ padding: '0.75rem 1rem' }}>Name</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Email</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>User / Name</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Email Address</th>
                       <th style={{ padding: '0.75rem 1rem' }}>Role</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Account Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -226,19 +266,28 @@ export default function AdminDashboard() {
                         <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
                           {u.name || u.email}
                         </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>{u.email}</td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          <StatusPill status={u.role === 'ADMIN' ? 'active' : 'revoked'}>
-                            {u.role}
-                          </StatusPill>
+                        <td
+                          style={{
+                            padding: '0.75rem 1rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          {u.email}
                         </td>
                         <td style={{ padding: '0.75rem 1rem' }}>
-                          <StatusPill status={u.isDisabled ? 'expired' : 'active'}>
+                          <StatusStamp status={u.role === 'ADMIN' ? 'active' : 'exhausted'}>
+                            {u.role === 'ADMIN' ? 'Postmaster' : 'User'}
+                          </StatusStamp>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <StatusStamp status={u.isDisabled ? 'revoked' : 'active'}>
                             {u.isDisabled ? 'Disabled' : 'Active'}
-                          </StatusPill>
+                          </StatusStamp>
                         </td>
                         <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                           <Button
+                            variant={u.isDisabled ? 'secondary' : 'danger'}
                             onClick={() =>
                               setUserConfirmDialog({
                                 open: true,
@@ -247,11 +296,9 @@ export default function AdminDashboard() {
                               })
                             }
                             style={{
-                              padding: '0.25rem 0.5rem',
+                              minHeight: '32px',
+                              padding: '0 0.65rem',
                               fontSize: '0.75rem',
-                              backgroundColor: u.isDisabled
-                                ? 'var(--status-active-text)'
-                                : 'var(--color-danger)',
                             }}
                           >
                             {u.isDisabled ? 'Re-enable' : 'Disable'}
@@ -270,15 +317,17 @@ export default function AdminDashboard() {
         {activeTab === 'files' && (
           <div>
             {loadingFiles ? (
-              <Spinner />
+              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                <Spinner />
+              </div>
             ) : files.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No files uploaded yet in the system.</p>
+              <p style={{ color: 'var(--text-secondary)' }}>No files kept in the vault yet.</p>
             ) : (
               <div
                 style={{
                   overflowX: 'auto',
                   backgroundColor: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border-subtle)',
                 }}
               >
@@ -286,17 +335,22 @@ export default function AdminDashboard() {
                   <thead>
                     <tr
                       style={{
-                        borderBottom: '1px solid var(--border-subtle)',
+                        borderBottom: '1px solid var(--border-strong)',
                         textAlign: 'left',
-                        backgroundColor: 'var(--bg-surface-hover)',
+                        backgroundColor: 'var(--bg-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--text-secondary)',
                       }}
                     >
-                      <th style={{ padding: '0.75rem 1rem' }}>File Name</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Owner</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Document Name</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Vault Owner</th>
                       <th style={{ padding: '0.75rem 1rem' }}>Size</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Uploaded</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Kept Since</th>
                       <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                        Administrative Action
+                        Postmaster Purge
                       </th>
                     </tr>
                   </thead>
@@ -306,23 +360,52 @@ export default function AdminDashboard() {
                         key={f.id || f._id}
                         style={{ borderBottom: '1px solid var(--border-subtle)' }}
                       >
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
+                        <td
+                          style={{
+                            padding: '0.75rem 1rem',
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.85rem',
+                          }}
+                        >
                           {f.originalName}
                         </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
+                        <td
+                          style={{
+                            padding: '0.75rem 1rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8125rem',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
                           {f.owner?.email || f.owner || '-'}
                         </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>{formatBytes(f.size)}</td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
+                        <td
+                          style={{
+                            padding: '0.75rem 1rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          {formatBytes(f.size)}
+                        </td>
+                        <td
+                          style={{
+                            padding: '0.75rem 1rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8125rem',
+                          }}
+                        >
                           {new Date(f.createdAt).toLocaleDateString()}
                         </td>
                         <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                           <Button
+                            variant="danger"
                             onClick={() => setDeleteFileDialog({ open: true, file: f })}
                             style={{
-                              padding: '0.25rem 0.5rem',
+                              minHeight: '32px',
+                              padding: '0 0.65rem',
                               fontSize: '0.75rem',
-                              backgroundColor: 'var(--color-danger)',
                             }}
                           >
                             Purge File
@@ -341,15 +424,17 @@ export default function AdminDashboard() {
         {activeTab === 'logs' && (
           <div>
             {loadingLogs ? (
-              <Spinner />
+              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                <Spinner />
+              </div>
             ) : logs.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No access events recorded yet.</p>
+              <p style={{ color: 'var(--text-secondary)' }}>No dispatch events recorded yet.</p>
             ) : (
               <div
                 style={{
                   overflowX: 'auto',
                   backgroundColor: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border-subtle)',
                 }}
               >
@@ -357,37 +442,69 @@ export default function AdminDashboard() {
                   <thead>
                     <tr
                       style={{
-                        borderBottom: '1px solid var(--border-subtle)',
+                        borderBottom: '1px solid var(--border-strong)',
                         textAlign: 'left',
-                        backgroundColor: 'var(--bg-surface-hover)',
+                        backgroundColor: 'var(--bg-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--text-secondary)',
                       }}
                     >
-                      <th style={{ padding: '0.5rem 0.75rem' }}>Timestamp</th>
-                      <th style={{ padding: '0.5rem 0.75rem' }}>Outcome</th>
-                      <th style={{ padding: '0.5rem 0.75rem' }}>IP Address</th>
-                      <th style={{ padding: '0.5rem 0.75rem' }}>Resource</th>
-                      <th style={{ padding: '0.5rem 0.75rem' }}>User Agent</th>
+                      <th style={{ padding: '0.65rem 0.85rem' }}>Timestamp</th>
+                      <th style={{ padding: '0.65rem 0.85rem' }}>Outcome</th>
+                      <th style={{ padding: '0.65rem 0.85rem' }}>IP Address</th>
+                      <th style={{ padding: '0.65rem 0.85rem' }}>Document Ref</th>
+                      <th style={{ padding: '0.65rem 0.85rem' }}>Client Agent</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((log, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                        <td style={{ padding: '0.5rem 0.75rem' }}>
-                          {new Date(log.timestamp).toLocaleString()}
-                        </td>
-                        <td style={{ padding: '0.5rem 0.75rem' }}>
-                          <StatusPill status={log.outcome === 'success' ? 'active' : 'expired'}>
-                            {log.outcome}
-                          </StatusPill>
-                        </td>
-                        <td style={{ padding: '0.5rem 0.75rem' }}>{log.ip}</td>
-                        <td style={{ padding: '0.5rem 0.75rem' }}>File: {log.fileId || '-'}</td>
+                      <tr
+                        key={log._id || log.id || idx}
+                        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      >
                         <td
                           style={{
-                            padding: '0.5rem 0.75rem',
+                            padding: '0.65rem 0.85rem',
+                            fontFamily: 'var(--font-mono)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {new Date(log.timestamp).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '0.65rem 0.85rem' }}>
+                          <StatusStamp status={log.outcome === 'success' ? 'active' : 'revoked'}>
+                            {log.outcome}
+                          </StatusStamp>
+                        </td>
+                        <td
+                          style={{
+                            padding: '0.65rem 0.85rem',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {log.ip}
+                        </td>
+                        <td
+                          style={{
+                            padding: '0.65rem 0.85rem',
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {log.fileId ? `file:${String(log.fileId).slice(-6)}` : '-'}
+                        </td>
+                        <td
+                          style={{
+                            padding: '0.65rem 0.85rem',
                             maxWidth: '240px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--text-secondary)',
                           }}
                         >
                           {log.userAgent || '-'}
@@ -405,20 +522,29 @@ export default function AdminDashboard() {
       {/* User Toggle Dialog */}
       <Dialog
         open={userConfirmDialog.open}
-        title={userConfirmDialog.willDisable ? 'Disable User Account' : 'Re-enable User Account'}
+        title={userConfirmDialog.willDisable ? 'Disable Vault Access' : 'Re-enable Vault Access'}
         onClose={() => setUserConfirmDialog({ open: false, user: null, willDisable: false })}
         onConfirm={handleToggleUser}
-        confirmLabel={userConfirmDialog.willDisable ? 'Disable Account' : 'Enable Account'}
+        confirmLabel={userConfirmDialog.willDisable ? 'Disable Account' : 'Re-enable Account'}
+        isDestructive={userConfirmDialog.willDisable}
       >
-        <p>
-          Are you sure you want to {userConfirmDialog.willDisable ? 'disable' : 'enable'} the
-          account for <strong>{userConfirmDialog.user?.email}</strong>?
+        <p style={{ color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+          Are you sure you want to {userConfirmDialog.willDisable ? 'disable' : 're-enable'} the
+          vault for <strong>{userConfirmDialog.user?.email}</strong>?
         </p>
         {userConfirmDialog.willDisable && (
-          <p style={{ marginTop: '0.5rem', color: 'var(--color-danger)', fontSize: '0.875rem' }}>
-            This immediately revokes all active refresh tokens and prevents future logins until
-            re-enabled.
-          </p>
+          <div
+            style={{
+              backgroundColor: 'var(--status-revoked-bg)',
+              color: 'var(--status-revoked-text)',
+              border: '1px solid var(--status-revoked-border)',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.875rem',
+            }}
+          >
+            This immediately revokes all active refresh tokens and prevents access until re-enabled.
+          </div>
         )}
       </Dialog>
 
@@ -428,15 +554,26 @@ export default function AdminDashboard() {
         title="Administrative File Purge"
         onClose={() => setDeleteFileDialog({ open: false, file: null })}
         onConfirm={handleDeleteFile}
-        confirmLabel="Purge File"
+        confirmLabel="Purge Document"
+        isDestructive
       >
-        <p>
-          Permanently delete file <strong>{deleteFileDialog.file?.originalName}</strong> across all
-          tenants?
+        <p style={{ color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+          Permanently delete document <strong>{deleteFileDialog.file?.originalName}</strong> across
+          the entire vault?
         </p>
-        <p style={{ marginTop: '0.5rem', color: 'var(--color-danger)', fontSize: '0.875rem' }}>
-          This purges the binary from disk storage and immediately cancels any public access links.
-        </p>
+        <div
+          style={{
+            backgroundColor: 'var(--status-revoked-bg)',
+            color: 'var(--status-revoked-text)',
+            border: '1px solid var(--status-revoked-border)',
+            padding: '0.75rem 1rem',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.875rem',
+          }}
+        >
+          This immediately purges the binary from storage and permanently invalidates all public
+          share keys associated with it.
+        </div>
       </Dialog>
     </div>
   );
